@@ -1,0 +1,10 @@
+# ide
+.env
+.vscode
+
+# go
+/sheriff
+
+# other
+
+dist/
