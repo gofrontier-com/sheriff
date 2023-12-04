@@ -8,8 +8,8 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleDefinitionByName(roleDefinitionsClient *armauthorization.RoleDefinitionsClient, cache gocache.Cache, subscriptionId string, roleDefinitionName string) (*armauthorization.RoleDefinition, error) {
-	roleDefinitions, err := GetRoleDefinitions(roleDefinitionsClient, cache, subscriptionId)
+func GetRoleDefinitionByName(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, subscriptionId string, roleDefinitionName string) (*armauthorization.RoleDefinition, error) {
+	roleDefinitions, err := GetRoleDefinitions(clientFactory, cache, subscriptionId)
 	if err != nil {
 		return nil, err
 	}

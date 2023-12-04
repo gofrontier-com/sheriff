@@ -1,4 +1,4 @@
-package config
+package azure_rbac_config
 
 import (
 	"os"
@@ -9,8 +9,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func LoadConfig(configDirPath string) (*core.Config, error) {
-	configurationData := core.Config{}
+func Load(configDirPath string) (*core.AzureRbacConfig, error) {
+	configurationData := core.AzureRbacConfig{}
 
 	entries, err := os.ReadDir(filepath.Join(configDirPath, "groups"))
 	if err != nil {

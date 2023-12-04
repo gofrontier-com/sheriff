@@ -1,5 +1,7 @@
 package core
 
+import "time"
+
 type activeAssignments struct {
 	ResourceGroups map[string][]*ActiveAssignment `yaml:"resourceGroups" validate:"dive"`
 	Resources      map[string][]*ActiveAssignment `yaml:"resources" validate:"dive"`
@@ -15,17 +17,18 @@ type ActiveAssignment struct {
 	Scope     string
 }
 
-type Config struct {
+type AzureRbacConfig struct {
 	Groups   []*Group  `validate:"dive"`
 	Policies []*Policy `validate:"dive"`
 }
 
 type EligibleAssignment struct {
-	EndDateTime              string `yaml:"endDateTime" validate:"datetime"`
+	EndDateTime              *time.Time `yaml:"endDateTime"`
 	GroupName                string
-	RoleManagementPolicyName string `yaml:"roleManagementPolicyName"`
-	RoleName                 string `yaml:"roleName" validate:"required"`
+	RoleManagementPolicyName *string `yaml:"roleManagementPolicyName"`
+	RoleName                 string  `yaml:"roleName" validate:"required"`
 	Scope                    string
+	StartDateTime            *time.Time `yaml:"startDateTime"`
 }
 
 type eligibleAssignments struct {

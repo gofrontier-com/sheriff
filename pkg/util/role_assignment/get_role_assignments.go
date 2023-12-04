@@ -9,13 +9,15 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleAssignments(roleAssignmentsClient *armauthorization.RoleAssignmentsClient, cache gocache.Cache, subscriptionId string, filter func(*armauthorization.RoleAssignment) bool) ([]*armauthorization.RoleAssignment, error) {
+func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, subscriptionId string, filter func(*armauthorization.RoleAssignment) bool) ([]*armauthorization.RoleAssignment, error) {
 	var roleAssignments []*armauthorization.RoleAssignment
 	cacheKey := "roleAssignments"
 
 	if r, found := cache.Get(cacheKey); found {
 		roleAssignments = r.([]*armauthorization.RoleAssignment)
 	} else {
+		roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
+
 		pager := roleAssignmentsClient.NewListForSubscriptionPager(nil)
 		for pager.More() {
 			page, err := pager.NextPage(context.Background())

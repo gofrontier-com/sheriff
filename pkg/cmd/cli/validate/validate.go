@@ -1,36 +1,17 @@
 package validate
 
 import (
-	"os"
-
-	"github.com/frontierdigital/sheriff/pkg/cmd/app/validate"
 	"github.com/spf13/cobra"
 )
 
-var (
-	configDir string
-)
-
-// NewCmdValidate creates a command to validate the config
+// NewCmdValidate creates a command to validate config
 func NewCmdValidate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validate config",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := validate.Validate(configDir); err != nil {
-				return err
-			}
-
-			return nil
-		},
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	cmd.Flags().StringVarP(&configDir, "config-dir", "c", wd, "Config directory")
+	cmd.AddCommand(NewCmdValidateAzureRbac())
 
 	return cmd
 }

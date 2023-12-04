@@ -8,14 +8,15 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleDefinitions(roleDefinitionsClient *armauthorization.RoleDefinitionsClient, cache gocache.Cache, subscriptionId string) ([]*armauthorization.RoleDefinition, error) {
+func GetRoleDefinitions(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, subscriptionId string) ([]*armauthorization.RoleDefinition, error) {
 	var roleDefinitions []*armauthorization.RoleDefinition
 	cacheKey := "roleDefinitions"
 
 	if r, found := cache.Get(cacheKey); found {
 		roleDefinitions = r.([]*armauthorization.RoleDefinition)
 	} else {
-		roleDefinitions = []*armauthorization.RoleDefinition{}
+		roleDefinitionsClient := clientFactory.NewRoleDefinitionsClient()
+
 		pager := roleDefinitionsClient.NewListPager(fmt.Sprintf("/subscriptions/%s", subscriptionId), nil)
 		for pager.More() {
 			page, err := pager.NextPage(context.Background())

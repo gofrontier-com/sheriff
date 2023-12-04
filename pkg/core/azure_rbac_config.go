@@ -6,7 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func (c *Config) GetActiveAssignments(subscriptionId string) []*ActiveAssignment {
+func (c *AzureRbacConfig) GetActiveAssignments(subscriptionId string) []*ActiveAssignment {
 	activeAssignments := []*ActiveAssignment{}
 
 	for _, g := range c.Groups {
@@ -50,7 +50,7 @@ func (c *Config) GetActiveAssignments(subscriptionId string) []*ActiveAssignment
 	return activeAssignments
 }
 
-func (c *Config) GetEligibleAssignments(subscriptionId string) []*EligibleAssignment {
+func (c *AzureRbacConfig) GetEligibleAssignments(subscriptionId string) []*EligibleAssignment {
 	eligibleAssignments := []*EligibleAssignment{}
 
 	for _, g := range c.Groups {
@@ -94,7 +94,7 @@ func (c *Config) GetEligibleAssignments(subscriptionId string) []*EligibleAssign
 	return eligibleAssignments
 }
 
-func (c *Config) Validate() error {
+func (c *AzureRbacConfig) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	err := validate.Struct(c)
