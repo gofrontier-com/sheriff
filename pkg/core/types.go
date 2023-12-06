@@ -1,6 +1,10 @@
 package core
 
-import "time"
+import (
+	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+)
 
 type activeAssignments struct {
 	ResourceGroups map[string][]*ActiveAssignment `yaml:"resourceGroups" validate:"dive"`
@@ -12,19 +16,20 @@ type AppConfig struct {
 }
 
 type ActiveAssignment struct {
-	GroupName string
-	RoleName  string `yaml:"roleName" validate:"required"`
-	Scope     string
+	PrincipalName string
+	RoleName      string `yaml:"roleName" validate:"required"`
+	Scope         string
 }
 
 type AzureRbacConfig struct {
-	Groups   []*Group  `validate:"dive"`
-	Policies []*Policy `validate:"dive"`
+	Groups   []*Principal `validate:"dive"`
+	Policies []*Policy    `validate:"dive"`
+	Users    []*Principal `validate:"dive"`
 }
 
 type EligibleAssignment struct {
 	EndDateTime              *time.Time `yaml:"endDateTime"`
-	GroupName                string
+	PrincipalName            string
 	RoleManagementPolicyName *string `yaml:"roleManagementPolicyName"`
 	RoleName                 string  `yaml:"roleName" validate:"required"`
 	Scope                    string
@@ -37,11 +42,48 @@ type eligibleAssignments struct {
 	Subscription   []*EligibleAssignment            `yaml:"subscription" validate:"dive"`
 }
 
-type Group struct {
+type Principal struct {
 	Active   *activeAssignments   `yaml:"active"`
 	Eligible *eligibleAssignments `yaml:"eligible"`
 	Name     string
 }
 
 type Policy struct {
+}
+
+type RoleAssignmentCreate struct {
+	PrincipalName                  string
+	PrincipalType                  armauthorization.PrincipalType
+	RoleAssignmentCreateParameters *armauthorization.RoleAssignmentCreateParameters
+	RoleAssignmentName             string
+	RoleName                       string
+	Scope                          string
+}
+
+type RoleAssignmentDelete struct {
+	PrincipalName    string
+	PrincipalType    armauthorization.PrincipalType
+	RoleAssignmentID string
+	RoleName         string
+	Scope            string
+}
+
+type RoleEligibilityScheduleCreate struct {
+	PrincipalName                      string
+	PrincipalType                      armauthorization.PrincipalType
+	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
+	RoleEligibilityScheduleRequestName string
+	RoleName                           string
+	Scope                              string
+}
+
+type RoleEligibilityScheduleDelete struct {
+	Cancel bool
+	// Id                                 *string
+	PrincipalName                      string
+	PrincipalType                      armauthorization.PrincipalType
+	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
+	RoleEligibilityScheduleRequestName string
+	RoleName                           string
+	Scope                              string
 }

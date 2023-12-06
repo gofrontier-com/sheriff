@@ -2,14 +2,13 @@ package role_eligibility_schedule
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, subscriptionId string, filter func(*armauthorization.RoleEligibilitySchedule) bool) ([]*armauthorization.RoleEligibilitySchedule, error) {
+func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, scope string, filter func(*armauthorization.RoleEligibilitySchedule) bool) ([]*armauthorization.RoleEligibilitySchedule, error) {
 	var roleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule
 	cacheKey := "roleEligibilitySchedules"
 
@@ -18,7 +17,7 @@ func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, 
 	} else {
 		roleEligibilitySchedulesClient := clientFactory.NewRoleEligibilitySchedulesClient()
 
-		pager := roleEligibilitySchedulesClient.NewListForScopePager(fmt.Sprintf("/subscriptions/%s", subscriptionId), nil)
+		pager := roleEligibilitySchedulesClient.NewListForScopePager(scope, nil)
 		for pager.More() {
 			page, err := pager.NextPage(context.Background())
 			if err != nil {
@@ -26,16 +25,10 @@ func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, 
 			}
 
 			for _, r := range page.Value {
-				// if *r.Properties.AssignmentType == armauthorization.AssignmentTypeActivated &&
-				// 	strings.HasPrefix(*r.Properties.Scope, fmt.Sprintf("/subscriptions/%s", subscriptionId)) {
-				// 	roleAssignmentSchedules = append(roleAssignmentSchedules, r)
-				// }
-				if strings.HasPrefix(*r.Properties.Scope, fmt.Sprintf("/subscriptions/%s", subscriptionId)) {
+				if strings.HasPrefix(*r.Properties.Scope, scope) {
 					roleEligibilitySchedules = append(roleEligibilitySchedules, r)
 				}
 			}
-
-			// roleAssignmentSchedules = append(roleAssignmentSchedules, page.Value...)
 		}
 
 		cache.Set(cacheKey, roleEligibilitySchedules, gocache.NoExpiration)

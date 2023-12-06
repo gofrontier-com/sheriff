@@ -16,6 +16,7 @@ import (
 	"github.com/frontierdigital/sheriff/pkg/util/role_assignment"
 	"github.com/frontierdigital/sheriff/pkg/util/role_definition"
 	"github.com/frontierdigital/sheriff/pkg/util/role_eligibility_schedule"
+	"github.com/frontierdigital/sheriff/pkg/util/user"
 	"github.com/frontierdigital/utils/output"
 	"github.com/google/uuid"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -30,7 +31,9 @@ func init() {
 }
 
 func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error {
-	PrintHeader(configDir, subscriptionId, dryRun)
+	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
+
+	PrintHeader(configDir, scope, dryRun)
 
 	output.PrintlnfInfo("Loading and validating Azure Rbac config from %s", configDir)
 
@@ -56,23 +59,21 @@ func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error 
 		return err
 	}
 
-	// roleAssignmentSchedulesClient := clientFactory.NewRoleAssignmentSchedulesClient()
-
 	graphServiceClient, err := msgraphsdkgo.NewGraphServiceClientWithCredentials(cred, []string{"https://graph.microsoft.com/.default"})
 	if err != nil {
 		return err
 	}
 
-	CheckPermissions(clientFactory, graphServiceClient, subscriptionId)
+	CheckPermissions(clientFactory, graphServiceClient, scope)
 
-	output.PrintlnfInfo("Comparing config against subscription with Id \"%s\"", subscriptionId)
+	output.PrintlnfInfo("Comparing config against scope \"%s\"", scope)
 
-	activeAssignments := config.GetActiveAssignments(subscriptionId)
+	groupActiveAssignments := config.GetGroupActiveAssignments(subscriptionId)
 
-	existingRoleAssignments, err := role_assignment.GetRoleAssignments(
+	existingGroupRoleAssignments, err := role_assignment.GetRoleAssignments(
 		clientFactory,
 		cache,
-		subscriptionId,
+		scope,
 		func(a *armauthorization.RoleAssignment) bool {
 			return *a.Properties.PrincipalType == armauthorization.PrincipalTypeGroup
 		},
@@ -81,46 +82,52 @@ func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error 
 		return err
 	}
 
-	activeAssignmentsToCreate, err := getActiveAssignmentsToCreate(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		activeAssignments,
-		existingRoleAssignments,
-	)
-	if err != nil {
-		return err
-	}
+	userActiveAssignments := config.GetUserActiveAssignments(subscriptionId)
 
-	activeAssignmentsToIgnore, err := getActiveAssignmentsToIgnore(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		activeAssignments,
-		existingRoleAssignments,
-	)
-	if err != nil {
-		return err
-	}
-
-	roleAssignmentsToDelete, err := getRoleAssignmentsToDelete(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		activeAssignments,
-		existingRoleAssignments,
-	)
-	if err != nil {
-		return err
-	}
-
-	eligibleAssignments := config.GetEligibleAssignments(subscriptionId)
-	_ = eligibleAssignments
-
-	existingRoleEligibilitySchedules, err := role_eligibility_schedule.GetRoleEligibilitySchedules(
+	existingUserRoleAssignments, err := role_assignment.GetRoleAssignments(
 		clientFactory,
 		cache,
-		subscriptionId,
+		scope,
+		func(a *armauthorization.RoleAssignment) bool {
+			return *a.Properties.PrincipalType == armauthorization.PrincipalTypeUser
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	roleAssignmentCreates, err := getRoleAssignmentCreates(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		groupActiveAssignments,
+		existingGroupRoleAssignments,
+		userActiveAssignments,
+		existingUserRoleAssignments,
+	)
+	if err != nil {
+		return err
+	}
+
+	roleAssignmentDeletes, err := getRoleAssignmentDeletes(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		groupActiveAssignments,
+		existingGroupRoleAssignments,
+		userActiveAssignments,
+		existingUserRoleAssignments,
+	)
+	if err != nil {
+		return err
+	}
+
+	groupEligibleAssignments := config.GetGroupEligibleAssignments(subscriptionId)
+
+	existingGroupRoleEligibilitySchedules, err := role_eligibility_schedule.GetRoleEligibilitySchedules(
+		clientFactory,
+		cache,
+		scope,
 		func(s *armauthorization.RoleEligibilitySchedule) bool {
 			return *s.Properties.PrincipalType == armauthorization.PrincipalTypeGroup
 		},
@@ -129,37 +136,86 @@ func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error 
 		return err
 	}
 
-	eligibleAssignmentsToCreate, err := getEligibleAssignmentsToCreate(
+	userEligibleAssignments := config.GetUserEligibleAssignments(subscriptionId)
+
+	existingUserRoleEligibilitySchedules, err := role_eligibility_schedule.GetRoleEligibilitySchedules(
 		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		eligibleAssignments,
-		existingRoleEligibilitySchedules,
+		cache,
+		scope,
+		func(s *armauthorization.RoleEligibilitySchedule) bool {
+			return *s.Properties.PrincipalType == armauthorization.PrincipalTypeUser
+		},
 	)
 	if err != nil {
 		return err
 	}
 
-	roleEligibilitySchedulesToDelete, err := getRoleEligibilitySchedulesToDelete(
+	roleEligibilityScheduleCreates, err := getRoleEligibilityScheduleCreates(
 		clientFactory,
 		graphServiceClient,
-		subscriptionId,
-		eligibleAssignments,
-		existingRoleEligibilitySchedules,
+		scope,
+		groupEligibleAssignments,
+		existingGroupRoleEligibilitySchedules,
+		userEligibleAssignments,
+		existingUserRoleEligibilitySchedules,
 	)
 	if err != nil {
 		return err
 	}
 
+	// roleEligibilityScheduleUpdates, err := getRoleEligibilityScheduleUpdates()
+	// if err != nil {
+	// 	return err
+	// }
+
+	roleEligibilityScheduleDeletes, err := getRoleEligibilityScheduleDeletes(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		groupEligibleAssignments,
+		existingGroupRoleEligibilitySchedules,
+		userEligibleAssignments,
+		existingUserRoleEligibilitySchedules,
+	)
+	if err != nil {
+		return err
+	}
+
+	// eligibleAssignmentsToUpdate, err := getEligibleAssignmentsToUpdate(
+	// 	clientFactory,
+	// 	graphServiceClient,
+	// 	scope,
+	// 	eligibleAssignments,
+	// 	existingRoleEligibilitySchedules,
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+
+	// eligibleAssignmentsToIgnore, err := getEligibleAssignmentsToIgnore(
+	// 	clientFactory,
+	// 	graphServiceClient,
+	// 	subscriptionId,
+	// 	eligibleAssignments,
+	// 	existingRoleEligibilitySchedules,
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+
 	output.PrintlnInfo(strings.Repeat("-", 78))
-	output.PrintlnfInfo("Active assignments to create: %d", len(activeAssignmentsToCreate))
-	output.PrintlnfInfo("Active assignments to delete: %d", len(roleAssignmentsToDelete))
-	output.PrintlnfInfo("Eligible assignments to create: %d", len(eligibleAssignmentsToCreate))
-	output.PrintlnfInfo("Eligible assignments to update: %d", "N/A")
-	output.PrintlnfInfo("Eligible assignments to delete: %d", len(roleEligibilitySchedulesToDelete))
-	output.PrintlnfInfo("\nActive assignments unchanged: %d", len(activeAssignmentsToIgnore))
-	output.PrintlnfInfo("Eligible assignments unchanged: %d", "N/A")
+	output.PrintlnfInfo("Active assignments to create: %d", len(roleAssignmentCreates))
+	output.PrintlnfInfo("Active assignments to delete: %d", len(roleAssignmentDeletes))
+	output.PrintlnfInfo("Eligible assignments to create: %d", len(roleEligibilityScheduleCreates))
+	// output.PrintlnfInfo("Eligible assignments to update: %d", len(eligibleAssignmentsToUpdate))
+	output.PrintlnfInfo("Eligible assignments to delete: %d", len(roleEligibilityScheduleDeletes))
+	// output.PrintlnfInfo("\nActive assignments unchanged: %d", len(activeAssignmentsToIgnore))
+	// output.PrintlnfInfo("Eligible assignments unchanged: %d", len(eligibleAssignmentsToIgnore))
 	output.PrintlnInfo(strings.Repeat("-", 78))
+
+	// if len(existingRoleEligibilitySchedules) != (len(eligibleAssignmentsToCreate) + len(eligibleAssignmentsToUpdate) + len(eligibleAssignmentsToIgnore) + len(roleEligibilitySchedulesToDelete)) {
+	// 	return fmt.Errorf("mismatch of existing role eligibility schedules and plan")
+	// }
 
 	// PrintPlan(len(activeAssignmentsToCreate), len(roleAssignmentsToDelete), len(activeAssignmentsToIgnore))
 
@@ -167,173 +223,23 @@ func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error 
 		return nil
 	}
 
-	err = createActiveAssignments(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		activeAssignmentsToCreate,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = deleteRoleAssignments(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		roleAssignmentsToDelete,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = createEligibleAssignments(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		eligibleAssignmentsToCreate,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = deleteRoleEligibilitySchedules(
-		clientFactory,
-		graphServiceClient,
-		subscriptionId,
-		roleEligibilitySchedulesToDelete,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func createActiveAssignments(
-	clientFactory *armauthorization.ClientFactory,
-	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	activeAssignments []*core.ActiveAssignment,
-) error {
 	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
-
-	for _, a := range activeAssignments {
-		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, subscriptionId, a.RoleName)
-		if err != nil {
-			return err
-		}
-
-		group, err := group.GetGroupByName(graphServiceClient, cache, a.GroupName)
-		if err != nil {
-			return err
-		}
-
-		output.PrintlnfInfo(
-			"Creating active assignment for group \"%s\" with role \"%s\" at scope \"%s\"",
-			a.GroupName,
-			a.RoleName,
-			a.Scope,
-		)
-
-		id := uuid.New()
-		roleAssignmentCreateParameters := &armauthorization.RoleAssignmentCreateParameters{
-			Properties: &armauthorization.RoleAssignmentProperties{
-				Description:      to.Ptr("Managed by Sheriff"),
-				PrincipalID:      group.GetId(),
-				PrincipalType:    to.Ptr(armauthorization.PrincipalTypeGroup),
-				RoleDefinitionID: roleDefinition.ID,
-			},
-		}
-		_, err = roleAssignmentsClient.Create(context.Background(), a.Scope, id.String(), *roleAssignmentCreateParameters, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func deleteRoleAssignments(
-	clientFactory *armauthorization.ClientFactory,
-	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	roleAssignments []*armauthorization.RoleAssignment,
-) error {
-	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
-
-	for _, r := range roleAssignments {
-		roleDefinition, err := role_definition.GetRoleDefinitionById(
-			clientFactory,
-			cache,
-			subscriptionId,
-			*r.Properties.RoleDefinitionID,
-		)
-		if err != nil {
-			return err
-		}
-
-		group, err := group.GetGroupById(graphServiceClient, cache, *r.Properties.PrincipalID)
-		if err != nil {
-			return err
-		}
-
-		output.PrintlnfInfo(
-			"Deleting active assignment for group \"%s\" with role \"%s\" at scope \"%s\"",
-			*group.GetDisplayName(),
-			*roleDefinition.Properties.RoleName,
-			*r.Properties.Scope,
-		)
-
-		_, err = roleAssignmentsClient.DeleteByID(context.Background(), *r.ID, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func createEligibleAssignments(
-	clientFactory *armauthorization.ClientFactory,
-	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	eligibleAssignments []*core.EligibleAssignment,
-) error {
 	roleEligibilityScheduleRequestsClient := clientFactory.NewRoleEligibilityScheduleRequestsClient()
 
-	for _, e := range eligibleAssignments {
-		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, subscriptionId, e.RoleName)
-		if err != nil {
-			return err
-		}
-
-		group, err := group.GetGroupByName(graphServiceClient, cache, e.GroupName)
-		if err != nil {
-			return err
-		}
-
+	for _, c := range roleAssignmentCreates {
 		output.PrintlnfInfo(
-			"Creating eligible assignment for group \"%s\" with role \"%s\" at scope \"%s\"",
-			e.GroupName,
-			e.RoleName,
-			e.Scope,
+			"Creating active assignment for %s \"%s\" with role \"%s\" at scope \"%s\"",
+			c.PrincipalType,
+			c.PrincipalName,
+			c.RoleName,
+			c.Scope,
 		)
 
-		id := uuid.New()
-		roleEligibilityScheduleRequest := &armauthorization.RoleEligibilityScheduleRequest{
-			Properties: &armauthorization.RoleEligibilityScheduleRequestProperties{
-				PrincipalID:      group.GetId(),
-				RequestType:      to.Ptr(armauthorization.RequestTypeAdminAssign),
-				RoleDefinitionID: roleDefinition.ID,
-				ScheduleInfo:     getScheduleInfo(e.StartDateTime, e.EndDateTime),
-			},
-		}
-		_, err = roleEligibilityScheduleRequestsClient.Create(
+		_, err = roleAssignmentsClient.Create(
 			context.Background(),
-			fmt.Sprintf("/providers/Microsoft.Subscription%s", e.Scope),
-			id.String(),
-			*roleEligibilityScheduleRequest,
+			c.Scope,
+			c.RoleAssignmentName,
+			*c.RoleAssignmentCreateParameters,
 			nil,
 		)
 		if err != nil {
@@ -341,65 +247,67 @@ func createEligibleAssignments(
 		}
 	}
 
-	return nil
-}
-
-func deleteRoleEligibilitySchedules(
-	clientFactory *armauthorization.ClientFactory,
-	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	roleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
-) error {
-	roleEligibilityScheduleRequestsClient := clientFactory.NewRoleEligibilityScheduleRequestsClient()
-
-	for _, r := range roleEligibilitySchedules {
-		roleDefinition, err := role_definition.GetRoleDefinitionById(
-			clientFactory,
-			cache,
-			subscriptionId,
-			*r.Properties.RoleDefinitionID,
-		)
-		if err != nil {
-			return err
-		}
-
-		group, err := group.GetGroupById(graphServiceClient, cache, *r.Properties.PrincipalID)
-		if err != nil {
-			return err
-		}
-
-		id := uuid.New()
+	for _, d := range roleAssignmentDeletes {
 		output.PrintlnfInfo(
-			"Deleting eligible assignment for group \"%s\" with role \"%s\" at scope \"%s\"",
-			*group.GetDisplayName(),
-			*roleDefinition.Properties.RoleName,
-			*r.Properties.Scope,
+			"Deleting active assignment for %s \"%s\" with role \"%s\" at scope \"%s\"",
+			d.PrincipalType,
+			d.PrincipalName,
+			d.RoleName,
+			d.Scope,
 		)
 
-		if *r.Properties.Status == armauthorization.StatusProvisioned {
-			roleEligibilityScheduleRequest := &armauthorization.RoleEligibilityScheduleRequest{
-				Properties: &armauthorization.RoleEligibilityScheduleRequestProperties{
-					PrincipalID:                     r.Properties.PrincipalID,
-					RequestType:                     to.Ptr(armauthorization.RequestTypeAdminRemove),
-					RoleDefinitionID:                r.Properties.RoleDefinitionID,
-					TargetRoleEligibilityScheduleID: r.ID, // TODO: Should this be TargetRoleEligibilityScheduleInstanceID?
-				},
-			}
-			_, err = roleEligibilityScheduleRequestsClient.Create(
+		_, err = roleAssignmentsClient.DeleteByID(context.Background(), d.RoleAssignmentID, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, c := range roleEligibilityScheduleCreates {
+		output.PrintlnfInfo(
+			"Creating eligible assignment for %s \"%s\" with role \"%s\" at scope \"%s\"",
+			c.PrincipalType,
+			c.PrincipalName,
+			c.RoleName,
+			c.Scope,
+		)
+
+		_, err = roleEligibilityScheduleRequestsClient.Create(
+			context.Background(),
+			c.Scope,
+			c.RoleEligibilityScheduleRequestName,
+			*c.RoleEligibilityScheduleRequest,
+			nil,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, d := range roleEligibilityScheduleDeletes {
+		output.PrintlnfInfo(
+			"Deleting eligible assignment for %s \"%s\" with role \"%s\" at scope \"%s\"",
+			d.PrincipalType,
+			d.PrincipalName,
+			d.RoleName,
+			d.Scope,
+		)
+
+		if d.Cancel {
+			_, err = roleEligibilityScheduleRequestsClient.Cancel(
 				context.Background(),
-				fmt.Sprintf("/providers/Microsoft.Subscription%s", *r.Properties.Scope),
-				id.String(),
-				*roleEligibilityScheduleRequest,
+				d.Scope,
+				d.RoleEligibilityScheduleRequestName,
 				nil,
 			)
 			if err != nil {
 				return err
 			}
 		} else {
-			_, err = roleEligibilityScheduleRequestsClient.Cancel(
+			_, err = roleEligibilityScheduleRequestsClient.Create(
 				context.Background(),
-				fmt.Sprintf("/providers/Microsoft.Subscription%s", *r.Properties.Scope),
-				*r.Name,
+				d.Scope,
+				d.RoleEligibilityScheduleRequestName,
+				*d.RoleEligibilityScheduleRequest,
 				nil,
 			)
 			if err != nil {
@@ -411,12 +319,47 @@ func deleteRoleEligibilitySchedules(
 	return nil
 }
 
-func getActiveAssignmentsToCreate(
+// func filterForGroupActiveAssignmentsToCreate(
+// 	clientFactory *armauthorization.ClientFactory,
+// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+// 	scope string,
+// 	activeAssignments []*core.ActiveAssignment,
+// 	existingRoleAssignments []*armauthorization.RoleAssignment,
+// ) (filtered []*core.ActiveAssignment, err error) {
+// 	return filterForActiveAssignmentsToCreate(
+// 		clientFactory,
+// 		graphServiceClient,
+// 		scope,
+// 		activeAssignments,
+// 		existingRoleAssignments,
+// 		group.GetGroupDisplayNameById,
+// 	)
+// }
+
+// func filterForUserActiveAssignmentsToCreate(
+// 	clientFactory *armauthorization.ClientFactory,
+// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+// 	scope string,
+// 	activeAssignments []*core.ActiveAssignment,
+// 	existingRoleAssignments []*armauthorization.RoleAssignment,
+// ) (filtered []*core.ActiveAssignment, err error) {
+// 	return filterForActiveAssignmentsToCreate(
+// 		clientFactory,
+// 		graphServiceClient,
+// 		scope,
+// 		activeAssignments,
+// 		existingRoleAssignments,
+// 		user.GetUserUpnById,
+// 	)
+// }
+
+func filterForActiveAssignmentsToCreate(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
+	scope string,
 	activeAssignments []*core.ActiveAssignment,
 	existingRoleAssignments []*armauthorization.RoleAssignment,
+	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, gocache.Cache, string) (*string, error),
 ) (filtered []*core.ActiveAssignment, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
@@ -429,21 +372,25 @@ func getActiveAssignmentsToCreate(
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				cache,
-				subscriptionId,
+				scope,
 				*r.Properties.RoleDefinitionID,
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			group, err := group.GetGroupById(graphServiceClient, cache, *r.Properties.PrincipalID)
+			principalName, err := getPrincipalName(
+				graphServiceClient,
+				cache,
+				*r.Properties.PrincipalID,
+			)
 			if err != nil {
 				panic(err)
 			}
 
 			return a.Scope == *r.Properties.Scope &&
 				a.RoleName == *roleDefinition.Properties.RoleName &&
-				a.GroupName == *group.GetDisplayName()
+				a.PrincipalName == *principalName
 		})
 
 		return idx == -1
@@ -452,51 +399,73 @@ func getActiveAssignmentsToCreate(
 	return
 }
 
-func getActiveAssignmentsToIgnore(
+// func filterForGroupEligibleAssignmentsToCreate(
+// 	clientFactory *armauthorization.ClientFactory,
+// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+// 	scope string,
+// 	eligibleAssignments []*core.EligibleAssignment,
+// 	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+// ) (filtered []*core.EligibleAssignment, err error) {
+// 	return filterForEligibleAssignmentsToCreate(
+// 		clientFactory,
+// 		graphServiceClient,
+// 		scope,
+// 		eligibleAssignments,
+// 		existingRoleEligibilitySchedules,
+// 		group.GetGroupDisplayNameById,
+// 	)
+// }
+
+func filterForEligibleAssignmentsToCreate(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	activeAssignments []*core.ActiveAssignment,
-	existingRoleAssignments []*armauthorization.RoleAssignment,
-) (filtered []*core.ActiveAssignment, err error) {
+	scope string,
+	eligibleAssignments []*core.EligibleAssignment,
+	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, gocache.Cache, string) (*string, error),
+) (filtered []*core.EligibleAssignment, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
 			err = e
 		}
 	}()
 
-	filtered = filter.Filter(activeAssignments, func(a *core.ActiveAssignment) bool {
-		idx := slices.IndexFunc(existingRoleAssignments, func(r *armauthorization.RoleAssignment) bool {
+	filtered = filter.Filter(eligibleAssignments, func(a *core.EligibleAssignment) bool {
+		idx := slices.IndexFunc(existingRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				cache,
-				subscriptionId,
-				*r.Properties.RoleDefinitionID,
+				scope,
+				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			group, err := group.GetGroupById(graphServiceClient, cache, *r.Properties.PrincipalID)
+			principalName, err := getPrincipalName(
+				graphServiceClient,
+				cache,
+				*s.Properties.PrincipalID,
+			)
 			if err != nil {
 				panic(err)
 			}
 
-			return a.Scope == *r.Properties.Scope &&
+			return a.Scope == *s.Properties.Scope &&
 				a.RoleName == *roleDefinition.Properties.RoleName &&
-				a.GroupName == *group.GetDisplayName()
+				a.PrincipalName == *principalName
 		})
 
-		return idx != -1
+		return idx == -1
 	})
 
 	return
 }
 
-func getEligibleAssignmentsToCreate(
+func getEligibleAssignmentsToUpdate(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
+	scope string,
 	eligibleAssignments []*core.EligibleAssignment,
 	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
 ) (filtered []*core.EligibleAssignment, err error) {
@@ -506,40 +475,57 @@ func getEligibleAssignmentsToCreate(
 		}
 	}()
 
-	filtered = filter.Filter(eligibleAssignments, func(e *core.EligibleAssignment) bool {
+	filtered = filter.Filter(eligibleAssignments, func(a *core.EligibleAssignment) bool {
 		idx := slices.IndexFunc(existingRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				cache,
-				subscriptionId,
+				scope,
 				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			group, err := group.GetGroupById(graphServiceClient, cache, *s.Properties.PrincipalID) // TODO: Get group Id by display name instead?
+			group, err := group.GetGroupById(graphServiceClient, cache, *s.Properties.PrincipalID)
 			if err != nil {
 				panic(err)
 			}
 
-			return e.Scope == *s.Properties.Scope &&
-				e.RoleName == *roleDefinition.Properties.RoleName &&
-				e.GroupName == *group.GetDisplayName()
+			return a.Scope == *s.Properties.Scope &&
+				a.RoleName == *roleDefinition.Properties.RoleName &&
+				a.PrincipalName == *group.GetDisplayName()
 		})
 
-		return idx == -1
+		if idx == -1 {
+			return false
+		}
+
+		existingRoleEligibilitySchedule := existingRoleEligibilitySchedules[idx]
+
+		if a.StartDateTime != nil {
+			if *existingRoleEligibilitySchedule.Properties.StartDateTime != *a.StartDateTime {
+				return true
+			}
+		}
+
+		if *existingRoleEligibilitySchedule.Properties.EndDateTime != *a.EndDateTime {
+			return true
+		}
+
+		return false
 	})
 
 	return
 }
 
-func getRoleAssignmentsToDelete(
+func filterForRoleAssignmentsToDelete(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	activeAssignments []*core.ActiveAssignment,
+	scope string,
 	existingRoleAssignments []*armauthorization.RoleAssignment,
+	activeAssignments []*core.ActiveAssignment,
+	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, gocache.Cache, string) (*string, error),
 ) (filtered []*armauthorization.RoleAssignment, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
@@ -552,21 +538,25 @@ func getRoleAssignmentsToDelete(
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				cache,
-				subscriptionId,
+				scope,
 				*r.Properties.RoleDefinitionID,
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			group, err := group.GetGroupById(graphServiceClient, cache, *r.Properties.PrincipalID)
+			principalName, err := getPrincipalName(
+				graphServiceClient,
+				cache,
+				*r.Properties.PrincipalID,
+			)
 			if err != nil {
 				panic(err)
 			}
 
 			return *r.Properties.Scope == a.Scope &&
 				*roleDefinition.Properties.RoleName == a.RoleName &&
-				*group.GetDisplayName() == a.GroupName
+				*principalName == a.PrincipalName
 		})
 
 		return idx == -1
@@ -575,12 +565,13 @@ func getRoleAssignmentsToDelete(
 	return
 }
 
-func getRoleEligibilitySchedulesToDelete(
+func filterForRoleEligibilitySchedulesToDelete(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
-	eligibleAssignments []*core.EligibleAssignment,
+	scope string,
 	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	eligibleAssignments []*core.EligibleAssignment,
+	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, gocache.Cache, string) (*string, error),
 ) (filtered []*armauthorization.RoleEligibilitySchedule, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
@@ -589,25 +580,29 @@ func getRoleEligibilitySchedulesToDelete(
 	}()
 
 	filtered = filter.Filter(existingRoleEligibilitySchedules, func(r *armauthorization.RoleEligibilitySchedule) bool {
-		idx := slices.IndexFunc(eligibleAssignments, func(e *core.EligibleAssignment) bool {
+		idx := slices.IndexFunc(eligibleAssignments, func(a *core.EligibleAssignment) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				cache,
-				subscriptionId,
+				scope,
 				*r.Properties.RoleDefinitionID,
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			group, err := group.GetGroupById(graphServiceClient, cache, *r.Properties.PrincipalID)
+			principalName, err := getPrincipalName(
+				graphServiceClient,
+				cache,
+				*r.Properties.PrincipalID,
+			)
 			if err != nil {
 				panic(err)
 			}
 
-			return *r.Properties.Scope == e.Scope &&
-				*roleDefinition.Properties.RoleName == e.RoleName &&
-				*group.GetDisplayName() == e.GroupName
+			return *r.Properties.Scope == a.Scope &&
+				*roleDefinition.Properties.RoleName == a.RoleName &&
+				*principalName == a.PrincipalName
 		})
 
 		return idx == -1
@@ -646,10 +641,418 @@ func getScheduleInfo(
 	}
 }
 
+// func updateEligibleAssignments(
+// 	clientFactory *armauthorization.ClientFactory,
+// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+// 	subscriptionId string,
+// 	eligibleAssignments []*core.EligibleAssignment,
+// ) error {
+// 	roleEligibilityScheduleRequestsClient := clientFactory.NewRoleEligibilityScheduleRequestsClient()
+
+// 	for _, e := range eligibleAssignments {
+// 		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, subscriptionId, e.RoleName)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		group, err := group.GetGroupByName(graphServiceClient, cache, e.GroupName)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		output.PrintlnfInfo(
+// 			"Updating eligible assignment for group \"%s\" with role \"%s\" at scope \"%s\"",
+// 			e.GroupName,
+// 			e.RoleName,
+// 			e.Scope,
+// 		)
+
+// 		id := uuid.New()
+// 		roleEligibilityScheduleRequest := &armauthorization.RoleEligibilityScheduleRequest{
+// 			Properties: &armauthorization.RoleEligibilityScheduleRequestProperties{
+// 				PrincipalID:                     group.GetId(),
+// 				RequestType:                     to.Ptr(armauthorization.RequestTypeAdminUpdate),
+// 				RoleDefinitionID:                roleDefinition.ID,
+// 				ScheduleInfo:                    getScheduleInfo(e.StartDateTime, e.EndDateTime),
+// 				TargetRoleEligibilityScheduleID: s.ID,
+// 			},
+// 		}
+// 		_, err = roleEligibilityScheduleRequestsClient.Create(
+// 			context.Background(),
+// 			fmt.Sprintf("/providers/Microsoft.Subscription%s", e.Scope),
+// 			id.String(),
+// 			*roleEligibilityScheduleRequest,
+// 			nil,
+// 		)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+
+// 	return nil
+// }
+
+func getRoleAssignmentCreates(
+	clientFactory *armauthorization.ClientFactory,
+	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+	scope string,
+	groupActiveAssignments []*core.ActiveAssignment,
+	existingGroupRoleAssignments []*armauthorization.RoleAssignment,
+	userActiveAssignments []*core.ActiveAssignment,
+	existingUserRoleAssignments []*armauthorization.RoleAssignment,
+) ([]*core.RoleAssignmentCreate, error) {
+	var roleAssignmentCreates []*core.RoleAssignmentCreate
+
+	groupActiveAssignmentsToCreate, err := filterForActiveAssignmentsToCreate(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		groupActiveAssignments,
+		existingGroupRoleAssignments,
+		group.GetGroupDisplayNameById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range groupActiveAssignmentsToCreate {
+		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, scope, a.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		group, err := group.GetGroupByName(graphServiceClient, cache, a.PrincipalName)
+		if err != nil {
+			return nil, err
+		}
+
+		roleAssignmentCreate := &core.RoleAssignmentCreate{
+			PrincipalName: *group.GetDisplayName(),
+			PrincipalType: armauthorization.PrincipalTypeGroup,
+			RoleAssignmentCreateParameters: &armauthorization.RoleAssignmentCreateParameters{
+				Properties: &armauthorization.RoleAssignmentProperties{
+					Description:      to.Ptr("Managed by Sheriff"),
+					PrincipalID:      group.GetId(),
+					PrincipalType:    to.Ptr(armauthorization.PrincipalTypeGroup),
+					RoleDefinitionID: roleDefinition.ID,
+				},
+			},
+			RoleAssignmentName: uuid.New().String(),
+			RoleName:           *roleDefinition.Properties.RoleName,
+			Scope:              a.Scope,
+		}
+		roleAssignmentCreates = append(roleAssignmentCreates, roleAssignmentCreate)
+	}
+
+	userActiveAssignmentsToCreate, err := filterForActiveAssignmentsToCreate(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		userActiveAssignments,
+		existingUserRoleAssignments,
+		user.GetUserUpnById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range userActiveAssignmentsToCreate {
+		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, scope, a.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := user.GetUserByUpn(graphServiceClient, cache, a.PrincipalName)
+		if err != nil {
+			return nil, err
+		}
+
+		roleAssignmentCreate := &core.RoleAssignmentCreate{
+			PrincipalName: *user.GetUserPrincipalName(),
+			PrincipalType: armauthorization.PrincipalTypeUser,
+			RoleAssignmentCreateParameters: &armauthorization.RoleAssignmentCreateParameters{
+				Properties: &armauthorization.RoleAssignmentProperties{
+					Description:      to.Ptr("Managed by Sheriff"),
+					PrincipalID:      user.GetId(),
+					PrincipalType:    to.Ptr(armauthorization.PrincipalTypeUser),
+					RoleDefinitionID: roleDefinition.ID,
+				},
+			},
+			RoleAssignmentName: uuid.New().String(),
+			RoleName:           *roleDefinition.Properties.RoleName,
+			Scope:              a.Scope,
+		}
+		roleAssignmentCreates = append(roleAssignmentCreates, roleAssignmentCreate)
+	}
+
+	return roleAssignmentCreates, nil
+}
+
+func getRoleAssignmentDeletes(
+	clientFactory *armauthorization.ClientFactory,
+	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+	scope string,
+	groupActiveAssignments []*core.ActiveAssignment,
+	existingGroupRoleAssignments []*armauthorization.RoleAssignment,
+	userActiveAssignments []*core.ActiveAssignment,
+	existingUserRoleAssignments []*armauthorization.RoleAssignment,
+) ([]*core.RoleAssignmentDelete, error) {
+	groupRoleAssignmentsToDelete, err := filterForRoleAssignmentsToDelete(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		existingGroupRoleAssignments,
+		groupActiveAssignments,
+		group.GetGroupDisplayNameById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	userRoleAssignmentsToDelete, err := filterForRoleAssignmentsToDelete(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		existingUserRoleAssignments,
+		userActiveAssignments,
+		user.GetUserUpnById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var roleAssignmentDeletes []*core.RoleAssignmentDelete
+
+	for _, a := range groupRoleAssignmentsToDelete {
+		roleDefinition, err := role_definition.GetRoleDefinitionById(
+			clientFactory,
+			cache,
+			scope,
+			*a.Properties.RoleDefinitionID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		group, err := group.GetGroupById(graphServiceClient, cache, *a.Properties.PrincipalID)
+		if err != nil {
+			return nil, err
+		}
+
+		roleAssignmentDelete := &core.RoleAssignmentDelete{
+			PrincipalName:    *group.GetDisplayName(),
+			PrincipalType:    armauthorization.PrincipalTypeGroup,
+			RoleAssignmentID: *a.ID,
+			RoleName:         *roleDefinition.Properties.RoleName,
+			Scope:            *a.Properties.Scope,
+		}
+		roleAssignmentDeletes = append(roleAssignmentDeletes, roleAssignmentDelete)
+	}
+
+	for _, a := range userRoleAssignmentsToDelete {
+		roleDefinition, err := role_definition.GetRoleDefinitionById(
+			clientFactory,
+			cache,
+			scope,
+			*a.Properties.RoleDefinitionID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := user.GetUserById(graphServiceClient, cache, *a.Properties.PrincipalID)
+		if err != nil {
+			return nil, err
+		}
+
+		roleAssignmentDelete := &core.RoleAssignmentDelete{
+			PrincipalName:    *user.GetUserPrincipalName(),
+			PrincipalType:    armauthorization.PrincipalTypeUser,
+			RoleAssignmentID: *a.ID,
+			RoleName:         *roleDefinition.Properties.RoleName,
+			Scope:            *a.Properties.Scope,
+		}
+		roleAssignmentDeletes = append(roleAssignmentDeletes, roleAssignmentDelete)
+	}
+
+	return roleAssignmentDeletes, nil
+}
+
+func getRoleEligibilityScheduleCreates(
+	clientFactory *armauthorization.ClientFactory,
+	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+	scope string,
+	groupEligibleAssignments []*core.EligibleAssignment,
+	existingGroupRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	userEligibleAssignments []*core.EligibleAssignment,
+	existingUserRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+) ([]*core.RoleEligibilityScheduleCreate, error) {
+	var roleEligibilityScheduleCreates []*core.RoleEligibilityScheduleCreate
+
+	groupEligibleAssignmentsToCreate, err := filterForEligibleAssignmentsToCreate(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		groupEligibleAssignments,
+		existingGroupRoleEligibilitySchedules,
+		group.GetGroupDisplayNameById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range groupEligibleAssignmentsToCreate {
+		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, scope, a.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		group, err := group.GetGroupByName(graphServiceClient, cache, a.PrincipalName)
+		if err != nil {
+			return nil, err
+		}
+
+		roleEligibilityScheduleCreate := &core.RoleEligibilityScheduleCreate{
+			PrincipalName: *group.GetDisplayName(),
+			PrincipalType: armauthorization.PrincipalTypeGroup,
+			RoleEligibilityScheduleRequest: &armauthorization.RoleEligibilityScheduleRequest{
+				Properties: &armauthorization.RoleEligibilityScheduleRequestProperties{
+					PrincipalID:      group.GetId(),
+					RequestType:      to.Ptr(armauthorization.RequestTypeAdminAssign),
+					RoleDefinitionID: roleDefinition.ID,
+					ScheduleInfo:     getScheduleInfo(a.StartDateTime, a.EndDateTime),
+				},
+			},
+			RoleEligibilityScheduleRequestName: uuid.New().String(),
+			RoleName:                           *roleDefinition.Properties.RoleName,
+			Scope:                              fmt.Sprintf("/providers/Microsoft.Subscription%s", a.Scope), // TODO: This?
+		}
+		roleEligibilityScheduleCreates = append(roleEligibilityScheduleCreates, roleEligibilityScheduleCreate)
+	}
+
+	userEligibleAssignmentsToCreate, err := filterForEligibleAssignmentsToCreate(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		userEligibleAssignments,
+		existingUserRoleEligibilitySchedules,
+		user.GetUserUpnById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, a := range userEligibleAssignmentsToCreate {
+		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, cache, scope, a.RoleName)
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := user.GetUserByUpn(graphServiceClient, cache, a.PrincipalName)
+		if err != nil {
+			return nil, err
+		}
+
+		roleEligibilityScheduleCreate := &core.RoleEligibilityScheduleCreate{
+			PrincipalName: *user.GetUserPrincipalName(),
+			PrincipalType: armauthorization.PrincipalTypeUser,
+			RoleEligibilityScheduleRequest: &armauthorization.RoleEligibilityScheduleRequest{
+				Properties: &armauthorization.RoleEligibilityScheduleRequestProperties{
+					PrincipalID:      user.GetId(),
+					RequestType:      to.Ptr(armauthorization.RequestTypeAdminAssign),
+					RoleDefinitionID: roleDefinition.ID,
+					ScheduleInfo:     getScheduleInfo(a.StartDateTime, a.EndDateTime),
+				},
+			},
+			RoleEligibilityScheduleRequestName: uuid.New().String(),
+			RoleName:                           *roleDefinition.Properties.RoleName,
+			Scope:                              a.Scope,
+		}
+		roleEligibilityScheduleCreates = append(roleEligibilityScheduleCreates, roleEligibilityScheduleCreate)
+	}
+
+	return roleEligibilityScheduleCreates, nil
+}
+
+func getRoleEligibilityScheduleDeletes(
+	clientFactory *armauthorization.ClientFactory,
+	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+	scope string,
+	groupEligibleAssignments []*core.EligibleAssignment,
+	existingGroupRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	userEligibleAssignments []*core.EligibleAssignment,
+	existingUserRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+) ([]*core.RoleEligibilityScheduleDelete, error) {
+	var roleEligibilityScheduleDeletes []*core.RoleEligibilityScheduleDelete
+
+	groupEligibilitySchedulesToDelete, err := filterForRoleEligibilitySchedulesToDelete(
+		clientFactory,
+		graphServiceClient,
+		scope,
+		existingGroupRoleEligibilitySchedules,
+		groupEligibleAssignments,
+		group.GetGroupDisplayNameById,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, s := range groupEligibilitySchedulesToDelete {
+		roleDefinition, err := role_definition.GetRoleDefinitionById(
+			clientFactory,
+			cache,
+			scope,
+			*s.Properties.RoleDefinitionID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		group, err := group.GetGroupById(graphServiceClient, cache, *s.Properties.PrincipalID)
+		if err != nil {
+			return nil, err
+		}
+
+		var roleEligibilityScheduleDelete *core.RoleEligibilityScheduleDelete
+		if *s.Properties.Status == armauthorization.StatusProvisioned {
+			roleEligibilityScheduleDelete = &core.RoleEligibilityScheduleDelete{
+				Cancel:                             false,
+				PrincipalName:                      *group.GetDisplayName(),
+				PrincipalType:                      armauthorization.PrincipalTypeGroup,
+				RoleEligibilityScheduleRequestName: uuid.New().String(),
+				RoleEligibilityScheduleRequest: &armauthorization.RoleEligibilityScheduleRequest{
+					Properties: &armauthorization.RoleEligibilityScheduleRequestProperties{
+						PrincipalID:                     s.Properties.PrincipalID,
+						RequestType:                     to.Ptr(armauthorization.RequestTypeAdminRemove),
+						RoleDefinitionID:                s.Properties.RoleDefinitionID,
+						TargetRoleEligibilityScheduleID: s.ID, // TODO: Should this be TargetRoleEligibilityScheduleInstanceID?
+					},
+				},
+				RoleName: *roleDefinition.Properties.RoleName,
+				Scope:    *s.Properties.Scope,
+			}
+		} else {
+			roleEligibilityScheduleDelete = &core.RoleEligibilityScheduleDelete{
+				Cancel:                             true,
+				PrincipalName:                      *group.GetDisplayName(),
+				PrincipalType:                      armauthorization.PrincipalTypeGroup,
+				RoleEligibilityScheduleRequestName: *s.Name,
+				RoleName:                           *roleDefinition.Properties.RoleName,
+				Scope:                              *s.Properties.Scope,
+			}
+		}
+		roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, roleEligibilityScheduleDelete)
+	}
+
+	// TODO: Users
+
+	return roleEligibilityScheduleDeletes, nil
+}
+
 func CheckPermissions(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	subscriptionId string,
+	scope string,
 ) error {
 	me, err := graphServiceClient.Me().Get(context.Background(), nil)
 	if err != nil {
@@ -659,10 +1062,10 @@ func CheckPermissions(
 	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 
 	hasRoleAssignmentsWritePermission := false
-	roleAssignmentsClientListForSubscriptionOptions := &armauthorization.RoleAssignmentsClientListForSubscriptionOptions{
+	roleAssignmentsClientListForScopeOptions := &armauthorization.RoleAssignmentsClientListForScopeOptions{
 		Filter: to.Ptr(fmt.Sprintf("assignedTo('%s')", *me.GetId())),
 	}
-	pager := roleAssignmentsClient.NewListForSubscriptionPager(roleAssignmentsClientListForSubscriptionOptions)
+	pager := roleAssignmentsClient.NewListForScopePager(scope, roleAssignmentsClientListForScopeOptions)
 	for pager.More() {
 		page, err := pager.NextPage(context.Background())
 		if err != nil {
@@ -673,7 +1076,7 @@ func CheckPermissions(
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				cache,
-				subscriptionId,
+				scope,
 				*r.Properties.RoleDefinitionID,
 			)
 			if err != nil {
@@ -702,11 +1105,11 @@ func CheckPermissions(
 	return nil
 }
 
-func PrintHeader(configDir string, subscriptionId string, dryRun bool) {
+func PrintHeader(configDir string, scope string, dryRun bool) {
 	builder := &strings.Builder{}
 	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 78)))
 	builder.WriteString(fmt.Sprintf("Config directory  | %s\n", configDir))
-	builder.WriteString(fmt.Sprintf("Subscription      | %s\n", subscriptionId))
+	builder.WriteString(fmt.Sprintf("Scope             | %s\n", scope))
 	builder.WriteString(fmt.Sprintf("Mode              | %s\n", "Groups only"))
 	builder.WriteString(fmt.Sprintf("Dry-run           | %v\n", dryRun))
 	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 78)))

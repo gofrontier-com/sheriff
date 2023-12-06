@@ -9,31 +9,51 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func Load(configDirPath string) (*core.AzureRbacConfig, error) {
-	configurationData := core.AzureRbacConfig{}
+func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
+	var principals []*core.Principal
 
-	entries, err := os.ReadDir(filepath.Join(configDirPath, "groups"))
+	entries, err := os.ReadDir(principalsDirPath)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, e := range entries {
-		filePath := filepath.Join(configDirPath, "groups", e.Name())
+		filePath := filepath.Join(principalsDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}
 
-		var group core.Group
+		var principal core.Principal
 
-		err = yaml.Unmarshal(yamlFile, &group)
+		err = yaml.Unmarshal(yamlFile, &principal)
 		if err != nil {
 			return nil, err
 		}
 
-		group.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		principal.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
 
-		configurationData.Groups = append(configurationData.Groups, &group)
+		principals = append(principals, &principal)
 	}
+
+	return principals, err
+}
+
+func Load(configDirPath string) (*core.AzureRbacConfig, error) {
+	groups, err := loadPrincipals(filepath.Join(configDirPath, "groups"))
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := loadPrincipals(filepath.Join(configDirPath, "users"))
+	if err != nil {
+		return nil, err
+	}
+
+	configurationData := core.AzureRbacConfig{
+		Groups: groups,
+		Users:  users,
+	}
+
 	return &configurationData, nil
 }

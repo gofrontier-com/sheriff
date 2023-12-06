@@ -2,14 +2,13 @@ package role_assignment
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, subscriptionId string, filter func(*armauthorization.RoleAssignment) bool) ([]*armauthorization.RoleAssignment, error) {
+func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, scope string, filter func(*armauthorization.RoleAssignment) bool) ([]*armauthorization.RoleAssignment, error) {
 	var roleAssignments []*armauthorization.RoleAssignment
 	cacheKey := "roleAssignments"
 
@@ -18,7 +17,7 @@ func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache goc
 	} else {
 		roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 
-		pager := roleAssignmentsClient.NewListForSubscriptionPager(nil)
+		pager := roleAssignmentsClient.NewListForScopePager(scope, nil)
 		for pager.More() {
 			page, err := pager.NextPage(context.Background())
 			if err != nil {
@@ -26,7 +25,7 @@ func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache goc
 			}
 
 			for _, r := range page.Value {
-				if strings.HasPrefix(*r.Properties.Scope, fmt.Sprintf("/subscriptions/%s", subscriptionId)) {
+				if strings.HasPrefix(*r.Properties.Scope, scope) {
 					roleAssignments = append(roleAssignments, r)
 				}
 			}
