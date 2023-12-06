@@ -319,40 +319,6 @@ func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error 
 	return nil
 }
 
-// func filterForGroupActiveAssignmentsToCreate(
-// 	clientFactory *armauthorization.ClientFactory,
-// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-// 	scope string,
-// 	activeAssignments []*core.ActiveAssignment,
-// 	existingRoleAssignments []*armauthorization.RoleAssignment,
-// ) (filtered []*core.ActiveAssignment, err error) {
-// 	return filterForActiveAssignmentsToCreate(
-// 		clientFactory,
-// 		graphServiceClient,
-// 		scope,
-// 		activeAssignments,
-// 		existingRoleAssignments,
-// 		group.GetGroupDisplayNameById,
-// 	)
-// }
-
-// func filterForUserActiveAssignmentsToCreate(
-// 	clientFactory *armauthorization.ClientFactory,
-// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-// 	scope string,
-// 	activeAssignments []*core.ActiveAssignment,
-// 	existingRoleAssignments []*armauthorization.RoleAssignment,
-// ) (filtered []*core.ActiveAssignment, err error) {
-// 	return filterForActiveAssignmentsToCreate(
-// 		clientFactory,
-// 		graphServiceClient,
-// 		scope,
-// 		activeAssignments,
-// 		existingRoleAssignments,
-// 		user.GetUserUpnById,
-// 	)
-// }
-
 func filterForActiveAssignmentsToCreate(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
@@ -398,23 +364,6 @@ func filterForActiveAssignmentsToCreate(
 
 	return
 }
-
-// func filterForGroupEligibleAssignmentsToCreate(
-// 	clientFactory *armauthorization.ClientFactory,
-// 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-// 	scope string,
-// 	eligibleAssignments []*core.EligibleAssignment,
-// 	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
-// ) (filtered []*core.EligibleAssignment, err error) {
-// 	return filterForEligibleAssignmentsToCreate(
-// 		clientFactory,
-// 		graphServiceClient,
-// 		scope,
-// 		eligibleAssignments,
-// 		existingRoleEligibilitySchedules,
-// 		group.GetGroupDisplayNameById,
-// 	)
-// }
 
 func filterForEligibleAssignmentsToCreate(
 	clientFactory *armauthorization.ClientFactory,
