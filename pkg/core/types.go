@@ -78,8 +78,16 @@ type RoleEligibilityScheduleCreate struct {
 }
 
 type RoleEligibilityScheduleDelete struct {
-	Cancel bool
-	// Id                                 *string
+	Cancel                             bool
+	PrincipalName                      string
+	PrincipalType                      armauthorization.PrincipalType
+	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
+	RoleEligibilityScheduleRequestName string
+	RoleName                           string
+	Scope                              string
+}
+
+type RoleEligibilityScheduleUpdate struct {
 	PrincipalName                      string
 	PrincipalType                      armauthorization.PrincipalType
 	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
