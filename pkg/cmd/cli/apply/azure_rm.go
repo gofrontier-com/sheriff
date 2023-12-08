@@ -13,13 +13,13 @@ var (
 	subscriptionId string
 )
 
-// NewCmdApplyAzureRbac creates a command to apply the Azure Rbac config
-func NewCmdApplyAzureRbac() *cobra.Command {
+// NewCmdApplyAzureRm creates a command to apply the Azure RM config
+func NewCmdApplyAzureRm() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "azurerbac",
-		Short: "Apply Azure Rbac config",
+		Use:   "azurerm",
+		Short: "Apply Azure Rm config",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := apply.ApplyAzureRbac(configDir, subscriptionId, dryRun); err != nil {
+			if err := apply.ApplyAzureRm(configDir, subscriptionId, dryRun); err != nil {
 				return err
 			}
 

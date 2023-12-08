@@ -11,13 +11,13 @@ var (
 	configDir string
 )
 
-// NewCmdValidate creates a command to validate the Azure Rbac config
-func NewCmdValidateAzureRbac() *cobra.Command {
+// NewCmdValidate creates a command to validate the Azure Rm config
+func NewCmdValidateAzureRm() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "azurerbac",
-		Short: "Validate Azure Rbac config",
+		Use:   "azurerm",
+		Short: "Validate Azure RM config",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := validate.ValidateAzureRbac(configDir); err != nil {
+			if err := validate.ValidateAzureRm(configDir); err != nil {
 				return err
 			}
 

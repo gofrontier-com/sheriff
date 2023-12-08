@@ -11,7 +11,7 @@ func NewCmdValidate() *cobra.Command {
 		Short: "Validate config",
 	}
 
-	cmd.AddCommand(NewCmdValidateAzureRbac())
+	cmd.AddCommand(NewCmdValidateAzureRm())
 
 	return cmd
 }

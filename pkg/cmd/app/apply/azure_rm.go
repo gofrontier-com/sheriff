@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/frontierdigital/sheriff/pkg/core"
-	"github.com/frontierdigital/sheriff/pkg/util/azure_rbac_config"
+	"github.com/frontierdigital/sheriff/pkg/util/azure_rm_config"
 	"github.com/frontierdigital/sheriff/pkg/util/filter"
 	"github.com/frontierdigital/sheriff/pkg/util/group"
 	"github.com/frontierdigital/sheriff/pkg/util/role_assignment"
@@ -30,14 +30,14 @@ func init() {
 	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
 }
 
-func ApplyAzureRbac(configDir string, subscriptionId string, dryRun bool) error {
+func ApplyAzureRm(configDir string, subscriptionId string, dryRun bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
 
 	PrintHeader(configDir, scope, dryRun)
 
-	output.PrintlnfInfo("Loading and validating Azure Rbac config from %s", configDir)
+	output.PrintlnfInfo("Loading and validating Azure RM config from %s", configDir)
 
-	config, err := azure_rbac_config.Load(configDir)
+	config, err := azure_rm_config.Load(configDir)
 	if err != nil {
 		return err
 	}

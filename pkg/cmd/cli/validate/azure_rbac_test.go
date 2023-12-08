@@ -4,10 +4,10 @@ import (
 	"testing"
 )
 
-func TestNewCmdValidateAzureRbac(t *testing.T) {
-	cmd := NewCmdValidateAzureRbac()
+func TestNewCmdValidateAzureRm(t *testing.T) {
+	cmd := NewCmdValidateAzureRm()
 
-	if cmd.Use != "azurerbac" {
+	if cmd.Use != "azurerm" {
 		t.Errorf("Use is not correct")
 	}
 }

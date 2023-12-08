@@ -1,4 +1,4 @@
-package azure_rbac_config
+package azure_rm_config
 
 import (
 	"os"
@@ -39,7 +39,7 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	return principals, err
 }
 
-func Load(configDirPath string) (*core.AzureRbacConfig, error) {
+func Load(configDirPath string) (*core.AzureRmConfig, error) {
 	groups, err := loadPrincipals(filepath.Join(configDirPath, "groups"))
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func Load(configDirPath string) (*core.AzureRbacConfig, error) {
 		return nil, err
 	}
 
-	configurationData := core.AzureRbacConfig{
+	configurationData := core.AzureRmConfig{
 		Groups: groups,
 		Users:  users,
 	}

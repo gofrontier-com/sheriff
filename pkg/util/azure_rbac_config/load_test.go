@@ -1,1 +1,0 @@
-package azure_rbac_config

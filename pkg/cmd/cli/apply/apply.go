@@ -11,7 +11,7 @@ func NewCmdApply() *cobra.Command {
 		Short: "Apply config",
 	}
 
-	cmd.AddCommand(NewCmdApplyAzureRbac())
+	cmd.AddCommand(NewCmdApplyAzureRm())
 
 	return cmd
 }

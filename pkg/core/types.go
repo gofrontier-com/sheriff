@@ -21,7 +21,7 @@ type ActiveAssignment struct {
 	Scope         string
 }
 
-type AzureRbacConfig struct {
+type AzureRmConfig struct {
 	Groups   []*Principal `validate:"dive"`
 	Policies []*Policy    `validate:"dive"`
 	Users    []*Principal `validate:"dive"`
