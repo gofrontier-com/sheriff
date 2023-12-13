@@ -22,9 +22,9 @@ type ActiveAssignment struct {
 }
 
 type AzureRmConfig struct {
-	Groups   []*Principal `validate:"dive"`
-	Policies []*Policy    `validate:"dive"`
-	Users    []*Principal `validate:"dive"`
+	Groups                       []*Principal                   `validate:"dive"` // TODO: Make private
+	RoleManagementPolicyRulesets []*RoleManagementPolicyRuleset `validate:"dive"` // TODO: Make private
+	Users                        []*Principal                   `validate:"dive"` // TODO: Make private
 }
 
 type EligibleAssignment struct {
@@ -48,9 +48,6 @@ type Principal struct {
 	Name     string
 }
 
-type Policy struct {
-}
-
 type RoleAssignmentCreate struct {
 	PrincipalName                  string
 	PrincipalType                  armauthorization.PrincipalType
@@ -69,29 +66,40 @@ type RoleAssignmentDelete struct {
 }
 
 type RoleEligibilityScheduleCreate struct {
+	EndDateTime                        *time.Time
 	PrincipalName                      string
 	PrincipalType                      armauthorization.PrincipalType
 	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
 	RoleEligibilityScheduleRequestName string
 	RoleName                           string
 	Scope                              string
+	StartDateTime                      *time.Time
 }
 
 type RoleEligibilityScheduleDelete struct {
 	Cancel                             bool
+	EndDateTime                        *time.Time
 	PrincipalName                      string
 	PrincipalType                      armauthorization.PrincipalType
 	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
 	RoleEligibilityScheduleRequestName string
 	RoleName                           string
 	Scope                              string
+	StartDateTime                      *time.Time
 }
 
 type RoleEligibilityScheduleUpdate struct {
+	EndDateTime                        *time.Time
 	PrincipalName                      string
 	PrincipalType                      armauthorization.PrincipalType
 	RoleEligibilityScheduleRequest     *armauthorization.RoleEligibilityScheduleRequest
 	RoleEligibilityScheduleRequestName string
 	RoleName                           string
 	Scope                              string
+	StartDateTime                      *time.Time
+}
+
+type RoleManagementPolicyRuleset struct {
+	Name  string
+	Rules []*armauthorization.RoleManagementPolicyRuleClassification
 }

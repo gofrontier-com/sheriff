@@ -2,18 +2,25 @@ package role_eligibility_schedule
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, scope string, filter func(*armauthorization.RoleEligibilitySchedule) bool) ([]*armauthorization.RoleEligibilitySchedule, error) {
-	var roleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule
-	cacheKey := "roleEligibilitySchedules"
+var cache gocache.Cache
 
-	if r, found := cache.Get(cacheKey); found {
-		roleEligibilitySchedules = r.([]*armauthorization.RoleEligibilitySchedule)
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, scope string, filter func(*armauthorization.RoleEligibilitySchedule) bool) ([]*armauthorization.RoleEligibilitySchedule, error) {
+	var roleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule
+	cacheKey := fmt.Sprintf("roleEligibilitySchedules_%s", scope)
+
+	if s, found := cache.Get(cacheKey); found {
+		roleEligibilitySchedules = s.([]*armauthorization.RoleEligibilitySchedule)
 	} else {
 		roleEligibilitySchedulesClient := clientFactory.NewRoleEligibilitySchedulesClient()
 
@@ -24,9 +31,9 @@ func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, 
 				return nil, err
 			}
 
-			for _, r := range page.Value {
-				if strings.HasPrefix(*r.Properties.Scope, scope) {
-					roleEligibilitySchedules = append(roleEligibilitySchedules, r)
+			for _, s := range page.Value {
+				if strings.HasPrefix(*s.Properties.Scope, scope) {
+					roleEligibilitySchedules = append(roleEligibilitySchedules, s)
 				}
 			}
 		}
@@ -35,9 +42,9 @@ func GetRoleEligibilitySchedules(clientFactory *armauthorization.ClientFactory, 
 	}
 
 	var filteredRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule
-	for _, r := range roleEligibilitySchedules {
-		if filter(r) {
-			filteredRoleEligibilitySchedules = append(filteredRoleEligibilitySchedules, r)
+	for _, s := range roleEligibilitySchedules {
+		if filter(s) {
+			filteredRoleEligibilitySchedules = append(filteredRoleEligibilitySchedules, s)
 		}
 	}
 

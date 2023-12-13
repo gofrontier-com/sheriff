@@ -2,17 +2,24 @@ package role_definition
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleDefinitions(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, scope string) ([]*armauthorization.RoleDefinition, error) {
-	var roleDefinitions []*armauthorization.RoleDefinition
-	cacheKey := "roleDefinitions"
+var cache gocache.Cache
 
-	if r, found := cache.Get(cacheKey); found {
-		roleDefinitions = r.([]*armauthorization.RoleDefinition)
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+func GetRoleDefinitions(clientFactory *armauthorization.ClientFactory, scope string, filter func(*armauthorization.RoleDefinition) bool) ([]*armauthorization.RoleDefinition, error) {
+	var roleDefinitions []*armauthorization.RoleDefinition
+	cacheKey := fmt.Sprintf("roleDefinitions_%s", scope)
+
+	if d, found := cache.Get(cacheKey); found {
+		roleDefinitions = d.([]*armauthorization.RoleDefinition)
 	} else {
 		roleDefinitionsClient := clientFactory.NewRoleDefinitionsClient()
 
@@ -29,5 +36,12 @@ func GetRoleDefinitions(clientFactory *armauthorization.ClientFactory, cache goc
 		cache.Set(cacheKey, roleDefinitions, gocache.NoExpiration)
 	}
 
-	return roleDefinitions, nil
+	var filteredRoleDefinitions []*armauthorization.RoleDefinition
+	for _, a := range roleDefinitions {
+		if filter(a) {
+			filteredRoleDefinitions = append(filteredRoleDefinitions, a)
+		}
+	}
+
+	return filteredRoleDefinitions, nil
 }

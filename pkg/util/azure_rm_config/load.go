@@ -5,9 +5,44 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/frontierdigital/sheriff/pkg/core"
 	"gopkg.in/yaml.v2"
 )
+
+func loadRoleManagementPolicyRulesets(policiesDirPath string) ([]*core.RoleManagementPolicyRuleset, error) {
+	var roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
+
+	entries, err := os.ReadDir(policiesDirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range entries {
+		filePath := filepath.Join(policiesDirPath, e.Name())
+		yamlFile, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, err
+		}
+
+		roleManagementPolicyProperties := armauthorization.RoleManagementPolicyProperties{}
+		err = roleManagementPolicyProperties.UnmarshalJSON(yamlFile)
+		if err != nil {
+			return nil, err
+		}
+
+		roleManagementPolicyRuleset := &core.RoleManagementPolicyRuleset{
+			Name: strings.TrimSuffix(e.Name(), filepath.Ext(e.Name())),
+		}
+		for _, r := range roleManagementPolicyProperties.Rules {
+			roleManagementPolicyRuleset.Rules = append(roleManagementPolicyRuleset.Rules, &r)
+		}
+
+		roleManagementPolicyRulesets = append(roleManagementPolicyRulesets, roleManagementPolicyRuleset)
+	}
+
+	return roleManagementPolicyRulesets, err
+}
 
 func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	var principals []*core.Principal
@@ -50,9 +85,15 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
+	roleManagementPolicyRulesets, err := loadRoleManagementPolicyRulesets(filepath.Join(configDirPath, "policy_rulesets"))
+	if err != nil {
+		return nil, err
+	}
+
 	configurationData := core.AzureRmConfig{
-		Groups: groups,
-		Users:  users,
+		Groups:                       groups,
+		RoleManagementPolicyRulesets: roleManagementPolicyRulesets,
+		Users:                        users,
 	}
 
 	return &configurationData, nil

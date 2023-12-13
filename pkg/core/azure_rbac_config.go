@@ -14,6 +14,10 @@ func (c *AzureRmConfig) GetGroupEligibleAssignments(subscriptionId string) []*El
 	return getEligibleAssignments(c.Groups, subscriptionId)
 }
 
+// func (c *AzureRmConfig) GetRoleManagementPolicyRulesets() []*RoleManagementPolicyRuleset {
+// 	groupEligibleAssignments := c.GetGroupEligibleAssignments("")
+// }
+
 func (c *AzureRmConfig) GetUserActiveAssignments(subscriptionId string) []*ActiveAssignment {
 	return getActiveAssignments(c.Users, subscriptionId)
 }

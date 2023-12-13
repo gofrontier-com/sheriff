@@ -2,26 +2,29 @@ package user
 
 import (
 	"fmt"
-	"slices"
 
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
-	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetUserByUpn(graphServiceClient *msgraphsdkgo.GraphServiceClient, cache gocache.Cache, upn string) (models.Userable, error) {
-	users, err := GetUsers(graphServiceClient, cache)
+func GetUserByUpn(graphServiceClient *msgraphsdkgo.GraphServiceClient, upn string) (models.Userable, error) {
+	users, err := GetUsers(
+		graphServiceClient,
+		func(u models.Userable) bool {
+			return *u.GetUserPrincipalName() == upn
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	idx := slices.IndexFunc(users, func(u models.Userable) bool {
-		return *u.GetUserPrincipalName() == upn
-	})
-
-	if idx == -1 {
+	if len(users) == 0 {
 		return nil, fmt.Errorf("user with upn \"%s\" not found", upn)
 	}
 
-	return users[idx], nil
+	if len(users) > 1 {
+		return nil, fmt.Errorf("multiple users with upn \"%s\" found", upn)
+	}
+
+	return users[0], nil
 }

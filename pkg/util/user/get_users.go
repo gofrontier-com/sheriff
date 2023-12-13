@@ -8,7 +8,13 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetUsers(graphServiceClient *msgraphsdkgo.GraphServiceClient, cache gocache.Cache) ([]models.Userable, error) {
+var cache gocache.Cache
+
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+func GetUsers(graphServiceClient *msgraphsdkgo.GraphServiceClient, filter func(models.Userable) bool) ([]models.Userable, error) {
 	var users = []models.Userable{}
 	cacheKey := "users"
 
@@ -24,6 +30,17 @@ func GetUsers(graphServiceClient *msgraphsdkgo.GraphServiceClient, cache gocache
 		users = response.GetValue()
 
 		cache.Set(cacheKey, users, gocache.NoExpiration)
+	}
+
+	if filter != nil {
+		var filteredUsers []models.Userable
+		for _, u := range users {
+			if filter(u) {
+				filteredUsers = append(filteredUsers, u)
+			}
+		}
+
+		return filteredUsers, nil
 	}
 
 	return users, nil

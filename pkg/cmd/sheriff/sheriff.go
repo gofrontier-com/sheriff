@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/frontierdigital/sheriff/pkg/cmd/cli/apply"
+	"github.com/frontierdigital/sheriff/pkg/cmd/cli/plan"
 	"github.com/frontierdigital/sheriff/pkg/cmd/cli/validate"
 	vers "github.com/frontierdigital/sheriff/pkg/cmd/cli/version"
 	"github.com/frontierdigital/sheriff/pkg/util/app_config"
@@ -32,6 +33,7 @@ func NewRootCmd(version string, commit string, date string) *cobra.Command {
 	}
 
 	rootCmd.AddCommand(apply.NewCmdApply())
+	rootCmd.AddCommand(plan.NewCmdPlan())
 	rootCmd.AddCommand(validate.NewCmdValidate())
 	rootCmd.AddCommand(vers.NewCmdVersion(version, commit, date))
 

@@ -8,7 +8,13 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetGroups(graphServiceClient *msgraphsdkgo.GraphServiceClient, cache gocache.Cache) ([]models.Groupable, error) {
+var cache gocache.Cache
+
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+func GetGroups(graphServiceClient *msgraphsdkgo.GraphServiceClient, filter func(models.Groupable) bool) ([]models.Groupable, error) {
 	var groups = []models.Groupable{}
 	cacheKey := "groups"
 
@@ -24,6 +30,17 @@ func GetGroups(graphServiceClient *msgraphsdkgo.GraphServiceClient, cache gocach
 		groups = response.GetValue()
 
 		cache.Set(cacheKey, groups, gocache.NoExpiration)
+	}
+
+	if filter != nil {
+		var filteredGroups []models.Groupable
+		for _, g := range groups {
+			if filter(g) {
+				filteredGroups = append(filteredGroups, g)
+			}
+		}
+
+		return filteredGroups, nil
 	}
 
 	return groups, nil

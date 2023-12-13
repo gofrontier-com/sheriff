@@ -2,25 +2,29 @@ package role_definition
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
-	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleDefinitionById(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, scope string, roleDefinitionId string) (*armauthorization.RoleDefinition, error) {
-	roleDefinitions, err := GetRoleDefinitions(clientFactory, cache, scope)
+func GetRoleDefinitionById(clientFactory *armauthorization.ClientFactory, scope string, roleDefinitionId string) (*armauthorization.RoleDefinition, error) {
+	roleDefinitions, err := GetRoleDefinitions(
+		clientFactory,
+		scope,
+		func(r *armauthorization.RoleDefinition) bool {
+			return *r.ID == roleDefinitionId
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	idx := slices.IndexFunc(roleDefinitions, func(r *armauthorization.RoleDefinition) bool {
-		return *r.ID == roleDefinitionId
-	})
-
-	if idx == -1 {
+	if len(roleDefinitions) == 0 {
 		return nil, fmt.Errorf("role definition with Id \"%s\" not found", roleDefinitionId)
 	}
 
-	return roleDefinitions[idx], nil
+	if len(roleDefinitions) > 1 {
+		return nil, fmt.Errorf("multiple role definitions with Id \"%s\" found", roleDefinitionId)
+	}
+
+	return roleDefinitions[0], nil
 }

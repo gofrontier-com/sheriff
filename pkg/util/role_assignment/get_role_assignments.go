@@ -2,18 +2,25 @@ package role_assignment
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache gocache.Cache, scope string, filter func(*armauthorization.RoleAssignment) bool) ([]*armauthorization.RoleAssignment, error) {
-	var roleAssignments []*armauthorization.RoleAssignment
-	cacheKey := "roleAssignments"
+var cache gocache.Cache
 
-	if r, found := cache.Get(cacheKey); found {
-		roleAssignments = r.([]*armauthorization.RoleAssignment)
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, scope string, filter func(*armauthorization.RoleAssignment) bool) ([]*armauthorization.RoleAssignment, error) {
+	var roleAssignments []*armauthorization.RoleAssignment
+	cacheKey := fmt.Sprintf("roleAssignments_%s", scope)
+
+	if a, found := cache.Get(cacheKey); found {
+		roleAssignments = a.([]*armauthorization.RoleAssignment)
 	} else {
 		roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 
@@ -35,9 +42,9 @@ func GetRoleAssignments(clientFactory *armauthorization.ClientFactory, cache goc
 	}
 
 	var filteredRoleAssignments []*armauthorization.RoleAssignment
-	for _, r := range roleAssignments {
-		if filter(r) {
-			filteredRoleAssignments = append(filteredRoleAssignments, r)
+	for _, a := range roleAssignments {
+		if filter(a) {
+			filteredRoleAssignments = append(filteredRoleAssignments, a)
 		}
 	}
 

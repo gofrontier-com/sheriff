@@ -1,4 +1,4 @@
-package apply
+package plan
 
 import (
 	"os"
@@ -9,17 +9,16 @@ import (
 
 var (
 	configDir      string
-	planOnly       bool
 	subscriptionId string
 )
 
-// NewCmdApplyAzureRm creates a command to apply the Azure RM config
-func NewCmdApplyAzureRm() *cobra.Command {
+// NewCmdPlanAzureRm creates a command to llan the Azure RM config changes
+func NewCmdPlanAzureRm() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azurerm",
-		Short: "Apply Azure Resource Manager config",
+		Short: "Plan Azure Resource Manager config changes",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := apply.ApplyAzureRm(configDir, subscriptionId, planOnly); err != nil {
+			if err := apply.ApplyAzureRm(configDir, subscriptionId, true); err != nil {
 				return err
 			}
 
@@ -33,7 +32,6 @@ func NewCmdApplyAzureRm() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&configDir, "config-dir", "c", wd, "Config directory")
-	cmd.Flags().BoolVarP(&planOnly, "plan-only", "p", false, "Plan-only")
 	cmd.Flags().StringVarP(&subscriptionId, "subscription-id", "s", "", "Subscription Id") // TODO: Support name
 
 	cobra.MarkFlagRequired(cmd.Flags(), "subscription-id")

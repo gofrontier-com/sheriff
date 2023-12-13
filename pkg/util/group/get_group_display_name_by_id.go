@@ -2,11 +2,10 @@ package group
 
 import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
-	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetGroupDisplayNameById(graphServiceClient *msgraphsdkgo.GraphServiceClient, cache gocache.Cache, groupId string) (*string, error) {
-	group, err := GetGroupById(graphServiceClient, cache, groupId)
+func GetGroupDisplayNameById(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupId string) (*string, error) {
+	group, err := GetGroupById(graphServiceClient, groupId)
 	if err != nil {
 		return nil, err
 	}
