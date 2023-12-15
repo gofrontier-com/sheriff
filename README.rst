@@ -48,3 +48,39 @@ The Sheriff extension for Azure DevOps is available from `Visual Studio Marketpl
 -----
 Usage
 -----
+
+.. code:: bash
+    $ sheriff --help
+     _____  _                  _   __   __     __                  ___
+    /  ___|| |                (_) / _| / _|   / _|                / _ \
+    \ `--. | |__    ___  _ __  _ | |_ | |_   | |_   ___   _ __   / /_\ \ ____ _   _  _ __   ___
+    `--. \| '_ \  / _ \| '__|| ||  _||  _|  |  _| / _ \ | '__|  |  _  ||_  /| | | || '__| / _ \
+    /\__/ /| | | ||  __/| |   | || |  | |    | |  | (_) || |     | | | | / / | |_| || |   |  __/
+    \____/ |_| |_| \___||_|   |_||_|  |_|    |_|   \___/ |_|     \_| |_//___| \__,_||_|    \___|
+
+    Sheriff is the command line tool to manage Azure Priviliged Identity Management (PIM) configuration
+
+    Usage:
+      sheriff
+      sheriff [command]
+
+    Available Commands:
+      apply       Apply config
+      completion  Generate the autocompletion script for the specified shell
+      help        Help about any command
+      plan        Plan changes
+      validate    Validate config
+      version     Output version information
+
+    Flags:
+      -h, --help   help for sheriff
+
+    Use "sheriff [command] --help" for more information about a command.
+
+~~~~~~~~~~~~~~~~~~~~~~
+Azure Resource Manager
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: bash
+
+  $ asdasd
