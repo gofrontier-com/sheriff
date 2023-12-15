@@ -3,11 +3,13 @@
 .. image:: https://github.com/frontierdigital/sheriff/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/frontierdigital/sheriff/actions/workflows/ci.yml
 
-=======
 Sheriff
 =======
 
 Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Priviliged Identity Management (PIM) configuration declaratively.
+
+.. sectnum::
+.. contents:: Table of Contents
 
 About
 -----
@@ -17,6 +19,8 @@ About
 Download
 --------
 
+Extension
+~~~~~~~~~
 
 Usage
 -----
