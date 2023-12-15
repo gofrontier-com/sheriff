@@ -45,36 +45,98 @@ Extension
 
 The Sheriff extension for Azure DevOps is available from `Visual Studio Marketplace <https://marketplace.visualstudio.com/items?itemName=frontierdigital.sheriff>`_, which will automatically install Sheriff via a task.
 
+-------------
+Configuration
+-------------
+
+~~~~~~~~~~~~~~~
+Azure Resources
+~~~~~~~~~~~~~~~
+
+Configuration of role assigments is managed via YAML files per group and/or user, in which both active and eligible role assignments are defined.
+
+.. code:: yaml
+
+  ---
+  active:
+    subscription: []
+    resourceGroups: {}
+    resources: {}
+  eligible:
+    subscription: []
+    resourceGroups: {}
+    resources: {}
+
+
+~~~~~~~~~~~~~~~~~~~~~
+Microsoft Entra roles
+~~~~~~~~~~~~~~~~~~~~~
+
+*Coming soon...*
+
+~~~~~~
+Groups
+~~~~~~
+
+*Coming soon...*
+
+
 -----
 Usage
 -----
 
 .. code:: bash
 
-      $ sheriff --help
-      Sheriff is the command line tool to manage Azure Priviliged Identity Management (PIM) configuration
+  $ sheriff --help
+  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Priviliged Identity Management (PIM) configuration declaratively
 
-      Usage:
-        sheriff
-        sheriff [command]
+  Usage:
+    sheriff
+    sheriff [command]
 
-      Available Commands:
-        apply       Apply config
-        completion  Generate the autocompletion script for the specified shell
-        help        Help about any command
-        plan        Plan changes
-        validate    Validate config
-        version     Output version information
+  Available Commands:
+    apply       Apply config
+    completion  Generate the autocompletion script for the specified shell
+    help        Help about any command
+    plan        Plan changes
+    validate    Validate config
+    version     Output version information
 
-      Flags:
-        -h, --help   help for sheriff
+  Flags:
+    -h, --help   help for sheriff
 
-      Use "sheriff [command] --help" for more information about a command.
+  Use "sheriff [command] --help" for more information about a command.
 
-~~~~~~~~~~~~~~~~~~~~~~
-Azure Resource Manager
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+Azure Resources
+~~~~~~~~~~~~~~~
+
+Plan
+~~~~
 
 .. code:: bash
 
-  $ asdasd
+  $ sheriff plan azurerm \
+      --config-dir <path to AzureRM config> \
+      --subscription-id <subscription ID>
+
+Apply
+~~~~~
+
+.. code:: bash
+
+  $ sheriff apply azurerm \
+      --config-dir <path to AzureRM config> \
+      --subscription-id <subscription ID>
+
+~~~~~~~~~~~~~~~~~~~~~
+Microsoft Entra roles
+~~~~~~~~~~~~~~~~~~~~~
+
+*Coming soon...*
+
+~~~~~~
+Groups
+~~~~~~
+
+*Coming soon...*
