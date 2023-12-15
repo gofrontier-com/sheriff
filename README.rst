@@ -7,8 +7,8 @@
 Sheriff
 =======
 
-Sheriff is a command line tool to manage Azure role-based access control (RBAC)
-and Microsoft Entra Priviliged Identity Management (PIM) configuration declaratively.
+Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
+and **Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM)** using a desired state configuration approach.
 
 .. contents:: Table of Contents
     :local:
@@ -16,6 +16,10 @@ and Microsoft Entra Priviliged Identity Management (PIM) configuration declarati
 -----
 About
 -----
+
+~~~~~~~
+Sheriff
+~~~~~~~
 
 Sheriff has been built to enable the management of Azure RBAC and Microsoft Entra PIM configuration
 via YAML/JSON files. Although some of its functionality overlaps with the AzureRM provider
@@ -28,6 +32,26 @@ of how that configuration was set. For example, if a user manually adds a role a
 present in the desired state YAML configuration, Sheriff will remove it.
 
 Sheriff is designed to be used as part of a CI/CD pipeline.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Azure role-based access control (Azure RBAC)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Azure role-based access control (Azure RBAC) helps you manage who has access to
+Azure resources, what they can do with those resources, and what areas they have access to.
+
+See `What is Azure role-based access control (Azure RBAC)? <https://learn.microsoft.com/en-us/azure/role-based-access-control/overview>`_ for more information.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Microsoft Entra Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
+enables you to manage, control, and monitor access to important resources in your organization.
+These resources include resources in Microsoft Entra ID, Azure, and other Microsoft Online Services
+such as Microsoft 365 or Microsoft Intune.
+
+See `What is Microsoft Entra Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
 
 --------
 Download
@@ -53,11 +77,22 @@ Configuration
 Azure Resources
 ~~~~~~~~~~~~~~~
 
+.. code:: bash
+
+  groups/
+    <group name>.yml
+    ...
+  rulesets/
+    <ruleset name>.yml
+    ...
+  users/
+    <user upn>.yml
+    ...
+
 Configuration of role assigments is managed via YAML files per group and/or user, in which both active and eligible role assignments are defined.
 
 .. code:: yaml
 
-  ---
   active:
     subscription: []
     resourceGroups: {}
