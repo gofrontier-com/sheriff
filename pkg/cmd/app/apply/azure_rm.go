@@ -47,18 +47,14 @@ func init() {
 func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
 
-	PrintHeader(configDir, scope, planOnly)
-
 	output.PrintlnInfo("Initialising...")
 
-	output.PrintlnfInfo("- Loading config from %s", configDir)
+	output.PrintlnInfo("- Loading and validating config")
 
 	config, err := azure_rm_config.Load(configDir)
 	if err != nil {
 		return err
 	}
-
-	output.PrintlnInfo("- Validating config")
 
 	err = config.Validate()
 	if err != nil {
@@ -242,7 +238,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 	}
 
 	if len(roleAssignmentCreates)+len(roleAssignmentDeletes)+len(roleEligibilityScheduleCreates)+len(roleEligibilityScheduleUpdates)+len(roleManagementPolicyUpdates)+len(roleEligibilityScheduleDeletes) == 0 {
-		output.PrintlnInfo("Nothing further to do!")
+		output.PrintlnInfo("\nNothing to do!")
 		return nil
 	}
 
@@ -250,6 +246,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 	roleEligibilityScheduleRequestsClient := clientFactory.NewRoleEligibilityScheduleRequestsClient()
+	roleManagementPoliciesClient := clientFactory.NewRoleManagementPoliciesClient()
 
 	for _, c := range roleAssignmentCreates {
 		output.PrintlnfInfo(
@@ -282,6 +279,25 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		)
 
 		_, err = roleAssignmentsClient.DeleteByID(context.Background(), d.RoleAssignmentID, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, u := range roleManagementPolicyUpdates {
+		output.PrintlnfInfo(
+			"Creating updating role management policy for role \"%s\" at scope \"%s\"",
+			u.RoleName,
+			u.Scope,
+		)
+
+		_, err = roleManagementPoliciesClient.Update(
+			context.Background(),
+			u.Scope,
+			*u.RoleManagementPolicy.Name,
+			*u.RoleManagementPolicy,
+			nil,
+		)
 		if err != nil {
 			return err
 		}
@@ -362,7 +378,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		}
 	}
 
-	output.PrintlnfInfo("\nApply complete: %d added, %d changed, %d deleted", len(roleAssignmentCreates)+len(roleEligibilityScheduleCreates), len(roleEligibilityScheduleUpdates), len(roleAssignmentDeletes)+len(roleEligibilityScheduleDeletes))
+	output.PrintlnfInfo("\nApply complete: %d added, %d changed, %d deleted", len(roleAssignmentCreates)+len(roleEligibilityScheduleCreates), len(roleEligibilityScheduleUpdates)+len(roleManagementPolicyUpdates), len(roleAssignmentDeletes)+len(roleEligibilityScheduleDeletes))
 
 	return nil
 }
@@ -499,21 +515,35 @@ func filterForEligibleAssignmentsToUpdate(
 
 		existingRoleEligibilitySchedule := existingRoleEligibilitySchedules[idx]
 
+		// If start time in config is nil, then we don't want to update the start time in Azure
+		// because it will be set to when the schedule was created, which is fine.
 		if a.StartDateTime != nil {
+			// If there is a start time in config, compare to Azure and flag for update as needed.
 			if *existingRoleEligibilitySchedule.Properties.StartDateTime != *a.StartDateTime {
 				return true
 			}
 		}
 
-		if *existingRoleEligibilitySchedule.Properties.EndDateTime != *a.EndDateTime {
+		// If end date is present in config and Azure, compare and flag for update as needed.
+		if existingRoleEligibilitySchedule.Properties.EndDateTime != nil && a.EndDateTime != nil {
+			if *existingRoleEligibilitySchedule.Properties.EndDateTime != *a.EndDateTime {
+				return true
+			}
+		} else if (existingRoleEligibilitySchedule.Properties.EndDateTime != nil && a.EndDateTime == nil) || (existingRoleEligibilitySchedule.Properties.EndDateTime == nil && a.EndDateTime != nil) {
+			// If end date is present in config but not Azure, or vice versa, flag for update.
 			return true
 		}
 
-		// if a.RoleManagementPolicyName != nil {
-		// 	get_role_management_policy_assignment.GetRoleManagementPolicyAssignmentByScopeAndRole(
-		// 		clientFactory,
-		// 		scope,
-		// 	)
+		// If there is an end time in config, compare to Azure and flag for update as needed.
+		// if a.EndDateTime != nil {
+		// 	if *existingRoleEligibilitySchedule.Properties.EndDateTime != *a.EndDateTime {
+		// 		return true
+		// 	}
+		// } else {
+		// 	// If there is no end time in config, but there is one in Azure, flag for update.
+		// 	if existingRoleEligibilitySchedule.Properties.EndDateTime != nil {
+		// 		return true
+		// 	}
 		// }
 
 		return false
@@ -1241,11 +1271,11 @@ func getRoleManagementPolicyUpdates(
 		}
 
 		if updateRequired {
+			roleManagementPolicy.Properties.Rules = roleManagementPolicyRuleset.Rules
 			roleManagementPolicyUpdates = append(roleManagementPolicyUpdates, &core.RoleManagementPolicyUpdate{
-				RoleManagementPolicyId:      *roleManagementPolicy.ID,
-				RoleManagementPolicyRuleset: roleManagementPolicyRuleset,
-				RoleName:                    *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.RoleDefinition.DisplayName,
-				Scope:                       *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.Scope.ID,
+				RoleManagementPolicy: roleManagementPolicy,
+				RoleName:             *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.RoleDefinition.DisplayName,
+				Scope:                *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.Scope.ID,
 			})
 		}
 	}
@@ -1336,23 +1366,6 @@ func CheckPermissions(
 	}
 
 	return nil
-}
-
-func PrintHeader(configDir string, scope string, planOnly bool) {
-	var actionText string
-	if planOnly {
-		actionText = "Plan"
-	} else {
-		actionText = "Apply"
-	}
-
-	builder := &strings.Builder{}
-	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
-	builder.WriteString(fmt.Sprintf("Action   | %s\n", actionText))
-	builder.WriteString(fmt.Sprintf("Mode     | %s\n", "Azure RM"))
-	builder.WriteString(fmt.Sprintf("Scope    | %s\n", scope))
-	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
-	output.PrintlnInfo(builder.String())
 }
 
 func PrintPlan(

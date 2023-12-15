@@ -1,9 +1,12 @@
 package apply
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/frontierdigital/sheriff/pkg/cmd/app/apply"
+	"github.com/frontierdigital/utils/output"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +22,8 @@ func NewCmdApplyAzureRm() *cobra.Command {
 		Use:   "azurerm",
 		Short: "Apply Azure Resource Manager config",
 		RunE: func(_ *cobra.Command, _ []string) error {
+			PrintHeader(configDir, subscriptionId)
+
 			if err := apply.ApplyAzureRm(configDir, subscriptionId, planOnly); err != nil {
 				return err
 			}
@@ -39,4 +44,15 @@ func NewCmdApplyAzureRm() *cobra.Command {
 	cobra.MarkFlagRequired(cmd.Flags(), "subscription-id")
 
 	return cmd
+}
+
+func PrintHeader(configDir string, scope string) {
+	builder := &strings.Builder{}
+	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
+	builder.WriteString(fmt.Sprintf("Action           | %s\n", "Apply"))
+	builder.WriteString(fmt.Sprintf("Mode             | %s\n", "Azure RM"))
+	builder.WriteString(fmt.Sprintf("Config path      | %s\n", configDir))
+	builder.WriteString(fmt.Sprintf("Subscription Id  | %s\n", scope))
+	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
+	output.PrintlnInfo(builder.String())
 }

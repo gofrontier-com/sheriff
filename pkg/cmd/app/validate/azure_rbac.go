@@ -6,11 +6,21 @@ import (
 )
 
 func ValidateAzureRm(configDir string) error {
-	output.PrintlnfInfo("Loading and validating Azure RM config from %s", configDir)
+	output.PrintlnInfo("Initialising...")
+
+	output.PrintlnInfo("- Loading and validating config\n")
+
 	config, err := azure_rm_config.Load(configDir)
 	if err != nil {
 		return err
 	}
 
-	return config.Validate()
+	err = config.Validate()
+	if err != nil {
+		return err
+	}
+
+	output.PrintlnInfo("Configuration is valid!\n")
+
+	return nil
 }

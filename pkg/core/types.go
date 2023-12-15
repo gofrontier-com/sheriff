@@ -105,8 +105,7 @@ type RoleManagementPolicyRuleset struct {
 }
 
 type RoleManagementPolicyUpdate struct {
-	RoleManagementPolicyId      string
-	RoleManagementPolicyRuleset *RoleManagementPolicyRuleset
-	RoleName                    string
-	Scope                       string
+	RoleManagementPolicy *armauthorization.RoleManagementPolicy
+	RoleName             string
+	Scope                string
 }

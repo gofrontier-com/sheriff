@@ -24,6 +24,8 @@ func (c *AzureRmConfig) GetUserEligibleAssignments(subscriptionId string) []*Eli
 
 func (c *AzureRmConfig) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
+	validate.RegisterStructValidation(ActiveAssignmentsStructLevelValidation, activeAssignments{})
+	validate.RegisterStructValidation(AzureRmConfigStructLevelValidation, AzureRmConfig{})
 
 	err := validate.Struct(c)
 	if err != nil {
@@ -31,6 +33,54 @@ func (c *AzureRmConfig) Validate() error {
 	}
 
 	return nil
+}
+
+func ActiveAssignmentsStructLevelValidation(sl validator.StructLevel) {
+	activeAssignments := sl.Current().Interface().(activeAssignments)
+
+	if CountUniqueActiveAssignments(activeAssignments.Subscription) != len(activeAssignments.Subscription) {
+		sl.ReportError(activeAssignments.Subscription, "Subscription", "", "duplicate role name", "")
+	}
+
+	resourceGroupNames := make([]string, 0, len(activeAssignments.ResourceGroups))
+	for g := range activeAssignments.ResourceGroups {
+		resourceGroupNames = append(resourceGroupNames, g)
+	}
+
+	for _, r := range resourceGroupNames {
+		if CountUniqueActiveAssignments(activeAssignments.ResourceGroups[r]) != len(activeAssignments.ResourceGroups[r]) {
+			sl.ReportError(activeAssignments.ResourceGroups[r], r, "", "duplicate role name", "")
+		}
+	}
+
+	resourceNames := make([]string, 0, len(activeAssignments.Resources))
+	for r := range activeAssignments.Resources {
+		resourceNames = append(resourceNames, r)
+	}
+
+	for _, r := range resourceNames {
+		if CountUniqueActiveAssignments(activeAssignments.Resources[r]) != len(activeAssignments.Resources[r]) {
+			sl.ReportError(activeAssignments.Resources[r], r, "", "duplicate role name", "")
+		}
+	}
+}
+
+func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
+	azureRmConfig := sl.Current().Interface().(AzureRmConfig)
+	_ = azureRmConfig
+}
+
+func CountUniqueActiveAssignments(activeAssignments []*ActiveAssignment) int {
+	seen := make(map[string]bool)
+	unique := []string{}
+
+	for _, a := range activeAssignments {
+		if _, ok := seen[a.RoleName]; !ok {
+			seen[a.RoleName] = true
+			unique = append(unique, a.RoleName)
+		}
+	}
+	return len(unique)
 }
 
 func getActiveAssignments(principals []*Principal, subscriptionId string) []*ActiveAssignment {
