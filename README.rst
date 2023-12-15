@@ -8,8 +8,10 @@ Sheriff
 
 Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Priviliged Identity Management (PIM) configuration declaratively.
 
-.. sectnum::
-.. contents:: Table of Contents
+------------
+
+.. toctree::
+  :maxdepth: 2
 
 About
 -----
