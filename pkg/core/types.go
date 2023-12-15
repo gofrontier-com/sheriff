@@ -104,12 +104,6 @@ type RoleManagementPolicyRuleset struct {
 	Rules []armauthorization.RoleManagementPolicyRuleClassification
 }
 
-// type RoleManagementPolicyInstance struct {
-// 	RoleManagementPolicy *RoleManagementPolicy
-// 	RoleName             string
-// 	Scope                string
-// }
-
 type RoleManagementPolicyUpdate struct {
 	RoleManagementPolicyId      string
 	RoleManagementPolicyRuleset *RoleManagementPolicyRuleset
