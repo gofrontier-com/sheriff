@@ -34,9 +34,7 @@ func loadRoleManagementPolicyRulesets(policiesDirPath string) ([]*core.RoleManag
 		roleManagementPolicyRuleset := &core.RoleManagementPolicyRuleset{
 			Name: strings.TrimSuffix(e.Name(), filepath.Ext(e.Name())),
 		}
-		for _, r := range roleManagementPolicyProperties.Rules {
-			roleManagementPolicyRuleset.Rules = append(roleManagementPolicyRuleset.Rules, &r)
-		}
+		roleManagementPolicyRuleset.Rules = append(roleManagementPolicyRuleset.Rules, roleManagementPolicyProperties.Rules...)
 
 		roleManagementPolicyRulesets = append(roleManagementPolicyRulesets, roleManagementPolicyRuleset)
 	}
@@ -85,7 +83,7 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
-	roleManagementPolicyRulesets, err := loadRoleManagementPolicyRulesets(filepath.Join(configDirPath, "policy_rulesets"))
+	roleManagementPolicyRulesets, err := loadRoleManagementPolicyRulesets(filepath.Join(configDirPath, "policies"))
 	if err != nil {
 		return nil, err
 	}

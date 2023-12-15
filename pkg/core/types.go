@@ -101,5 +101,18 @@ type RoleEligibilityScheduleUpdate struct {
 
 type RoleManagementPolicyRuleset struct {
 	Name  string
-	Rules []*armauthorization.RoleManagementPolicyRuleClassification
+	Rules []armauthorization.RoleManagementPolicyRuleClassification
+}
+
+// type RoleManagementPolicyInstance struct {
+// 	RoleManagementPolicy *RoleManagementPolicy
+// 	RoleName             string
+// 	Scope                string
+// }
+
+type RoleManagementPolicyUpdate struct {
+	RoleManagementPolicyId      string
+	RoleManagementPolicyRuleset *RoleManagementPolicyRuleset
+	RoleName                    string
+	Scope                       string
 }

@@ -2,6 +2,8 @@ package apply
 
 import (
 	"context"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -16,6 +18,7 @@ import (
 	"github.com/frontierdigital/sheriff/pkg/util/role_assignment"
 	"github.com/frontierdigital/sheriff/pkg/util/role_definition"
 	"github.com/frontierdigital/sheriff/pkg/util/role_eligibility_schedule"
+	"github.com/frontierdigital/sheriff/pkg/util/role_management_policy"
 	"github.com/frontierdigital/sheriff/pkg/util/role_management_policy_assignment"
 	"github.com/frontierdigital/sheriff/pkg/util/user"
 	"github.com/frontierdigital/utils/output"
@@ -23,6 +26,23 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"golang.org/x/exp/slices"
 )
+
+//go:embed default_role_management_policy.json
+var defaultRoleManagementPolicyRulesetData string
+
+var defaultRoleManagementPolicyRuleset *core.RoleManagementPolicyRuleset
+
+func init() {
+	roleManagementPolicyProperties := armauthorization.RoleManagementPolicyProperties{}
+	err := roleManagementPolicyProperties.UnmarshalJSON([]byte(defaultRoleManagementPolicyRulesetData))
+	if err != nil {
+		panic(err)
+	}
+	defaultRoleManagementPolicyRuleset = &core.RoleManagementPolicyRuleset{
+		Name:  "default",
+		Rules: roleManagementPolicyProperties.Rules,
+	}
+}
 
 func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
@@ -193,29 +213,14 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	output.PrintlnInfo("- Role management policies\n")
 
-	// roleManagementPolicies := config.GetRoleManagementPolicies()
-
-	//region Temp
-
-	policyClient := clientFactory.NewRoleManagementPoliciesClient()
-
-	policies, err := role_management_policy_assignment.GetRoleManagementPolicyAssignments(
+	roleManagementPolicyUpdates, err := getRoleManagementPolicyUpdates(
 		clientFactory,
-		scope,
-		func(a *armauthorization.RoleManagementPolicyAssignment) bool { return true },
+		config.RoleManagementPolicyRulesets,
+		append(groupEligibleAssignments, userEligibleAssignments...),
 	)
 	if err != nil {
 		return err
 	}
-	println(len(policies))
-
-	policy, err := policyClient.Get(context.Background(), scope, *policies[74].Properties.PolicyID, nil)
-	if err != nil {
-		return err
-	}
-	_ = policy
-
-	//endregion
 
 	if planOnly {
 		output.PrintlnInfo("Sheriff would perform the following actions:\n")
@@ -229,13 +234,14 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		roleEligibilityScheduleCreates,
 		roleEligibilityScheduleUpdates,
 		roleEligibilityScheduleDeletes,
+		roleManagementPolicyUpdates,
 	)
 
 	if planOnly {
 		return nil
 	}
 
-	if len(roleAssignmentCreates)+len(roleAssignmentDeletes)+len(roleEligibilityScheduleCreates)+len(roleEligibilityScheduleUpdates)+len(roleEligibilityScheduleDeletes) == 0 {
+	if len(roleAssignmentCreates)+len(roleAssignmentDeletes)+len(roleEligibilityScheduleCreates)+len(roleEligibilityScheduleUpdates)+len(roleManagementPolicyUpdates)+len(roleEligibilityScheduleDeletes) == 0 {
 		output.PrintlnInfo("Nothing further to do!")
 		return nil
 	}
@@ -638,7 +644,7 @@ func getRoleAssignmentCreates(
 			return nil, err
 		}
 
-		roleAssignmentCreate := &core.RoleAssignmentCreate{
+		roleAssignmentCreates = append(roleAssignmentCreates, &core.RoleAssignmentCreate{
 			PrincipalName: *group.GetDisplayName(),
 			PrincipalType: armauthorization.PrincipalTypeGroup,
 			RoleAssignmentCreateParameters: &armauthorization.RoleAssignmentCreateParameters{
@@ -652,8 +658,7 @@ func getRoleAssignmentCreates(
 			RoleAssignmentName: uuid.New().String(),
 			RoleName:           *roleDefinition.Properties.RoleName,
 			Scope:              a.Scope,
-		}
-		roleAssignmentCreates = append(roleAssignmentCreates, roleAssignmentCreate)
+		})
 	}
 
 	userActiveAssignmentsToCreate, err := filterForActiveAssignmentsToCreate(
@@ -679,7 +684,7 @@ func getRoleAssignmentCreates(
 			return nil, err
 		}
 
-		roleAssignmentCreate := &core.RoleAssignmentCreate{
+		roleAssignmentCreates = append(roleAssignmentCreates, &core.RoleAssignmentCreate{
 			PrincipalName: *user.GetUserPrincipalName(),
 			PrincipalType: armauthorization.PrincipalTypeUser,
 			RoleAssignmentCreateParameters: &armauthorization.RoleAssignmentCreateParameters{
@@ -693,8 +698,7 @@ func getRoleAssignmentCreates(
 			RoleAssignmentName: uuid.New().String(),
 			RoleName:           *roleDefinition.Properties.RoleName,
 			Scope:              a.Scope,
-		}
-		roleAssignmentCreates = append(roleAssignmentCreates, roleAssignmentCreate)
+		})
 	}
 
 	return roleAssignmentCreates, nil
@@ -750,14 +754,13 @@ func getRoleAssignmentDeletes(
 			return nil, err
 		}
 
-		roleAssignmentDelete := &core.RoleAssignmentDelete{
+		roleAssignmentDeletes = append(roleAssignmentDeletes, &core.RoleAssignmentDelete{
 			PrincipalName:    *group.GetDisplayName(),
 			PrincipalType:    armauthorization.PrincipalTypeGroup,
 			RoleAssignmentID: *a.ID,
 			RoleName:         *roleDefinition.Properties.RoleName,
 			Scope:            *a.Properties.Scope,
-		}
-		roleAssignmentDeletes = append(roleAssignmentDeletes, roleAssignmentDelete)
+		})
 	}
 
 	for _, a := range userRoleAssignmentsToDelete {
@@ -775,14 +778,13 @@ func getRoleAssignmentDeletes(
 			return nil, err
 		}
 
-		roleAssignmentDelete := &core.RoleAssignmentDelete{
+		roleAssignmentDeletes = append(roleAssignmentDeletes, &core.RoleAssignmentDelete{
 			PrincipalName:    *user.GetUserPrincipalName(),
 			PrincipalType:    armauthorization.PrincipalTypeUser,
 			RoleAssignmentID: *a.ID,
 			RoleName:         *roleDefinition.Properties.RoleName,
 			Scope:            *a.Properties.Scope,
-		}
-		roleAssignmentDeletes = append(roleAssignmentDeletes, roleAssignmentDelete)
+		})
 	}
 
 	return roleAssignmentDeletes, nil
@@ -823,7 +825,7 @@ func getRoleEligibilityScheduleCreates(
 		}
 
 		scheduleInfo := getScheduleInfo(a.StartDateTime, a.EndDateTime)
-		roleEligibilityScheduleCreate := &core.RoleEligibilityScheduleCreate{
+		roleEligibilityScheduleCreates = append(roleEligibilityScheduleCreates, &core.RoleEligibilityScheduleCreate{
 			EndDateTime:   scheduleInfo.Expiration.EndDateTime,
 			PrincipalName: *group.GetDisplayName(),
 			PrincipalType: armauthorization.PrincipalTypeGroup,
@@ -839,8 +841,7 @@ func getRoleEligibilityScheduleCreates(
 			RoleName:                           *roleDefinition.Properties.RoleName,
 			Scope:                              a.Scope,
 			StartDateTime:                      scheduleInfo.StartDateTime,
-		}
-		roleEligibilityScheduleCreates = append(roleEligibilityScheduleCreates, roleEligibilityScheduleCreate)
+		})
 	}
 
 	userEligibleAssignmentsToCreate, err := filterForEligibleAssignmentsToCreate(
@@ -867,7 +868,7 @@ func getRoleEligibilityScheduleCreates(
 		}
 
 		scheduleInfo := getScheduleInfo(a.StartDateTime, a.EndDateTime)
-		roleEligibilityScheduleCreate := &core.RoleEligibilityScheduleCreate{
+		roleEligibilityScheduleCreates = append(roleEligibilityScheduleCreates, &core.RoleEligibilityScheduleCreate{
 			EndDateTime:   scheduleInfo.Expiration.EndDateTime,
 			PrincipalName: *user.GetUserPrincipalName(),
 			PrincipalType: armauthorization.PrincipalTypeUser,
@@ -883,8 +884,7 @@ func getRoleEligibilityScheduleCreates(
 			RoleName:                           *roleDefinition.Properties.RoleName,
 			Scope:                              a.Scope,
 			StartDateTime:                      scheduleInfo.StartDateTime,
-		}
-		roleEligibilityScheduleCreates = append(roleEligibilityScheduleCreates, roleEligibilityScheduleCreate)
+		})
 	}
 
 	return roleEligibilityScheduleCreates, nil
@@ -928,9 +928,8 @@ func getRoleEligibilityScheduleDeletes(
 			return nil, err
 		}
 
-		var roleEligibilityScheduleDelete *core.RoleEligibilityScheduleDelete
 		if *s.Properties.Status == armauthorization.StatusProvisioned {
-			roleEligibilityScheduleDelete = &core.RoleEligibilityScheduleDelete{
+			roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, &core.RoleEligibilityScheduleDelete{
 				Cancel:        false,
 				EndDateTime:   s.Properties.EndDateTime,
 				PrincipalName: *group.GetDisplayName(),
@@ -947,9 +946,9 @@ func getRoleEligibilityScheduleDeletes(
 				RoleName:                           *roleDefinition.Properties.RoleName,
 				Scope:                              *s.Properties.Scope,
 				StartDateTime:                      s.Properties.StartDateTime,
-			}
+			})
 		} else {
-			roleEligibilityScheduleDelete = &core.RoleEligibilityScheduleDelete{
+			roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, &core.RoleEligibilityScheduleDelete{
 				Cancel:                             true,
 				EndDateTime:                        s.Properties.EndDateTime,
 				PrincipalName:                      *group.GetDisplayName(),
@@ -958,9 +957,8 @@ func getRoleEligibilityScheduleDeletes(
 				RoleName:                           *roleDefinition.Properties.RoleName,
 				Scope:                              *s.Properties.Scope,
 				StartDateTime:                      s.Properties.StartDateTime,
-			}
+			})
 		}
-		roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, roleEligibilityScheduleDelete)
 	}
 
 	userEligibilitySchedulesToDelete, err := filterForRoleEligibilitySchedulesToDelete(
@@ -990,9 +988,8 @@ func getRoleEligibilityScheduleDeletes(
 			return nil, err
 		}
 
-		var roleEligibilityScheduleDelete *core.RoleEligibilityScheduleDelete
 		if *s.Properties.Status == armauthorization.StatusProvisioned {
-			roleEligibilityScheduleDelete = &core.RoleEligibilityScheduleDelete{
+			roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, &core.RoleEligibilityScheduleDelete{
 				Cancel:        false,
 				EndDateTime:   s.Properties.EndDateTime,
 				PrincipalName: *user.GetUserPrincipalName(),
@@ -1009,9 +1006,9 @@ func getRoleEligibilityScheduleDeletes(
 				RoleName:                           *roleDefinition.Properties.RoleName,
 				Scope:                              *s.Properties.Scope,
 				StartDateTime:                      s.Properties.StartDateTime,
-			}
+			})
 		} else {
-			roleEligibilityScheduleDelete = &core.RoleEligibilityScheduleDelete{
+			roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, &core.RoleEligibilityScheduleDelete{
 				Cancel:                             true,
 				EndDateTime:                        s.Properties.EndDateTime,
 				PrincipalName:                      *user.GetUserPrincipalName(),
@@ -1020,9 +1017,8 @@ func getRoleEligibilityScheduleDeletes(
 				RoleName:                           *roleDefinition.Properties.RoleName,
 				Scope:                              *s.Properties.Scope,
 				StartDateTime:                      s.Properties.StartDateTime,
-			}
+			})
 		}
-		roleEligibilityScheduleDeletes = append(roleEligibilityScheduleDeletes, roleEligibilityScheduleDelete)
 	}
 
 	return roleEligibilityScheduleDeletes, nil
@@ -1085,7 +1081,7 @@ func getRoleEligibilityScheduleUpdates(
 		}
 
 		scheduleInfo := getScheduleInfo(startTime, a.EndDateTime)
-		roleEligibilityScheduleUpdate := &core.RoleEligibilityScheduleUpdate{
+		roleEligibilityScheduleUpdates = append(roleEligibilityScheduleUpdates, &core.RoleEligibilityScheduleUpdate{
 			EndDateTime:   scheduleInfo.Expiration.EndDateTime,
 			PrincipalName: *group.GetDisplayName(),
 			PrincipalType: armauthorization.PrincipalTypeGroup,
@@ -1101,8 +1097,7 @@ func getRoleEligibilityScheduleUpdates(
 			RoleName:                           *roleDefinition.Properties.RoleName,
 			Scope:                              *existingGroupRoleEligibilitySchedule.Properties.Scope,
 			StartDateTime:                      scheduleInfo.StartDateTime,
-		}
-		roleEligibilityScheduleUpdates = append(roleEligibilityScheduleUpdates, roleEligibilityScheduleUpdate)
+		})
 	}
 
 	userEligibleAssignmentsToUpdate, err := filterForEligibleAssignmentsToUpdate(
@@ -1151,7 +1146,7 @@ func getRoleEligibilityScheduleUpdates(
 		}
 
 		scheduleInfo := getScheduleInfo(startTime, a.EndDateTime)
-		roleEligibilityScheduleUpdate := &core.RoleEligibilityScheduleUpdate{
+		roleEligibilityScheduleUpdates = append(roleEligibilityScheduleUpdates, &core.RoleEligibilityScheduleUpdate{
 			EndDateTime:   scheduleInfo.Expiration.EndDateTime,
 			PrincipalName: *user.GetUserPrincipalName(),
 			PrincipalType: armauthorization.PrincipalTypeGroup,
@@ -1167,11 +1162,95 @@ func getRoleEligibilityScheduleUpdates(
 			RoleName:                           *roleDefinition.Properties.RoleName,
 			Scope:                              *existingUserRoleEligibilitySchedule.Properties.Scope,
 			StartDateTime:                      scheduleInfo.StartDateTime,
-		}
-		roleEligibilityScheduleUpdates = append(roleEligibilityScheduleUpdates, roleEligibilityScheduleUpdate)
+		})
 	}
 
 	return roleEligibilityScheduleUpdates, nil
+}
+
+func getRoleManagementPolicyUpdates(
+	clientFactory *armauthorization.ClientFactory,
+	roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset,
+	eligibleAssignments []*core.EligibleAssignment,
+) ([]*core.RoleManagementPolicyUpdate, error) {
+	var roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate
+
+	for _, a := range eligibleAssignments {
+		var roleManagementPolicyRuleset *core.RoleManagementPolicyRuleset
+
+		if a.RoleManagementPolicyName == nil {
+			roleManagementPolicyRuleset = defaultRoleManagementPolicyRuleset
+		} else {
+			idx := slices.IndexFunc(roleManagementPolicyRulesets, func(r *core.RoleManagementPolicyRuleset) bool {
+				return r.Name == *a.RoleManagementPolicyName
+			})
+
+			if idx == -1 {
+				panic(fmt.Sprintf("role management policy ruleset with name '%s' not found", *a.RoleManagementPolicyName))
+			}
+
+			roleManagementPolicyRuleset = roleManagementPolicyRulesets[idx]
+		}
+
+		roleManagementPolicyAssignment, err := role_management_policy_assignment.GetRoleManagementPolicyAssignmentByRole(
+			clientFactory,
+			a.Scope,
+			a.RoleName,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		roleManagementPolicyIdParts := strings.Split(*roleManagementPolicyAssignment.Properties.PolicyID, "/")
+		roleManagementPolicy, err := role_management_policy.GetRoleManagementPolicyById(
+			clientFactory,
+			*roleManagementPolicyAssignment.Properties.Scope,
+			roleManagementPolicyIdParts[len(roleManagementPolicyIdParts)-1],
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		updateRequired := false
+		for _, r := range roleManagementPolicyRuleset.Rules {
+			ruleId := r.GetRoleManagementPolicyRule().ID
+			idx := slices.IndexFunc(roleManagementPolicy.Properties.Rules, func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
+				return *s.GetRoleManagementPolicyRule().ID == *ruleId
+			})
+
+			if idx == -1 {
+				return nil, fmt.Errorf("rule with Id '%s' not found", *ruleId)
+			}
+
+			existingRule := roleManagementPolicy.Properties.Rules[idx]
+
+			ruleData, err := json.Marshal(r)
+			if err != nil {
+				return nil, err
+			}
+
+			existingRuleData, err := json.Marshal(existingRule)
+			if err != nil {
+				return nil, err
+			}
+
+			if string(ruleData) != string(existingRuleData) {
+				updateRequired = true
+				break
+			}
+		}
+
+		if updateRequired {
+			roleManagementPolicyUpdates = append(roleManagementPolicyUpdates, &core.RoleManagementPolicyUpdate{
+				RoleManagementPolicyId:      *roleManagementPolicy.ID,
+				RoleManagementPolicyRuleset: roleManagementPolicyRuleset,
+				RoleName:                    *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.RoleDefinition.DisplayName,
+				Scope:                       *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.Scope.ID,
+			})
+		}
+	}
+
+	return roleManagementPolicyUpdates, nil
 }
 
 func getScheduleInfo(
@@ -1282,10 +1361,11 @@ func PrintPlan(
 	roleEligibilityScheduleCreates []*core.RoleEligibilityScheduleCreate,
 	roleEligibilityScheduleUpdates []*core.RoleEligibilityScheduleUpdate,
 	roleEligibilityScheduleDeletes []*core.RoleEligibilityScheduleDelete,
+	roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate,
 ) {
 	builder := &strings.Builder{}
 
-	if len(roleAssignmentCreates)+len(roleAssignmentDeletes)+len(roleEligibilityScheduleCreates)+len(roleEligibilityScheduleUpdates)+len(roleEligibilityScheduleDeletes) == 0 {
+	if len(roleAssignmentCreates)+len(roleAssignmentDeletes)+len(roleEligibilityScheduleCreates)+len(roleEligibilityScheduleUpdates)+len(roleEligibilityScheduleDeletes)+len(roleManagementPolicyUpdates) == 0 {
 		builder.WriteString("(none)\n\n")
 	} else {
 
@@ -1320,6 +1400,14 @@ func PrintPlan(
 			}
 		}
 
+		if len(roleManagementPolicyUpdates) > 0 {
+			builder.WriteString("  # Update role management policies:\n\n")
+			for _, u := range roleManagementPolicyUpdates {
+				builder.WriteString(fmt.Sprintf("    ~ Role: %s\n", u.RoleName))
+				builder.WriteString(fmt.Sprintf("      Scope: %s\n\n", u.Scope))
+			}
+		}
+
 		if len(roleAssignmentDeletes) > 0 {
 			builder.WriteString("  # Delete active assignments:\n\n")
 			for _, d := range roleAssignmentDeletes {
@@ -1341,7 +1429,7 @@ func PrintPlan(
 		}
 	}
 
-	builder.WriteString(fmt.Sprintf("Plan: %d to add, %d to change, %d to delete.", len(roleAssignmentCreates)+len(roleEligibilityScheduleCreates), len(roleEligibilityScheduleUpdates), len(roleAssignmentDeletes)+len(roleEligibilityScheduleDeletes)))
+	builder.WriteString(fmt.Sprintf("Plan: %d to add, %d to change, %d to delete.", len(roleAssignmentCreates)+len(roleEligibilityScheduleCreates), len(roleEligibilityScheduleUpdates)+len(roleManagementPolicyUpdates), len(roleAssignmentDeletes)+len(roleEligibilityScheduleDeletes)))
 
 	output.PrintlnInfo(builder.String())
 }
