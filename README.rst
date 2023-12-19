@@ -8,7 +8,7 @@ Sheriff
 =======
 
 Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
-and **Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM)** using a desired state configuration approach.
+and **Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM)** using desired state configuration.
 
 .. contents:: Table of Contents
     :local:
@@ -114,7 +114,6 @@ Groups
 ~~~~~~
 
 *Coming soon...*
-
 
 -----
 Usage

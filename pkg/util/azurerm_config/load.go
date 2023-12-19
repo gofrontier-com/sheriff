@@ -1,4 +1,4 @@
-package azure_rm_config
+package azurerm_config
 
 import (
 	"os"

@@ -1,1 +1,0 @@
-package azure_rm_config

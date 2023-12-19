@@ -12,7 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/frontierdigital/sheriff/pkg/core"
-	"github.com/frontierdigital/sheriff/pkg/util/azure_rm_config"
+	"github.com/frontierdigital/sheriff/pkg/util/azurerm_config"
 	"github.com/frontierdigital/sheriff/pkg/util/filter"
 	"github.com/frontierdigital/sheriff/pkg/util/group"
 	"github.com/frontierdigital/sheriff/pkg/util/role_assignment"
@@ -51,7 +51,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	output.PrintlnInfo("- Loading and validating config")
 
-	config, err := azure_rm_config.Load(configDir)
+	config, err := azurerm_config.Load(configDir)
 	if err != nil {
 		return err
 	}
