@@ -13,6 +13,12 @@ import (
 func loadRoleManagementPolicyRulesets(policiesDirPath string) ([]*core.RoleManagementPolicyRuleset, error) {
 	var roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
 
+	if _, err := os.Stat(policiesDirPath); err != nil {
+		if os.IsNotExist(err) {
+			return roleManagementPolicyRulesets, nil
+		}
+	}
+
 	entries, err := os.ReadDir(policiesDirPath)
 	if err != nil {
 		return nil, err
@@ -44,6 +50,12 @@ func loadRoleManagementPolicyRulesets(policiesDirPath string) ([]*core.RoleManag
 
 func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	var principals []*core.Principal
+
+	if _, err := os.Stat(principalsDirPath); err != nil {
+		if os.IsNotExist(err) {
+			return principals, nil
+		}
+	}
 
 	entries, err := os.ReadDir(principalsDirPath)
 	if err != nil {

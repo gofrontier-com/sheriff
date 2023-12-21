@@ -47,9 +47,16 @@ func NewCmdApplyAzureRm() *cobra.Command {
 }
 
 func PrintHeader(configDir string, scope string) {
+	var action string
+	if planOnly {
+		action = "Apply (plan-only)"
+	} else {
+		action = "Apply"
+	}
+
 	builder := &strings.Builder{}
 	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
-	builder.WriteString(fmt.Sprintf("Action           | %s\n", "Apply"))
+	builder.WriteString(fmt.Sprintf("Action           | %s\n", action))
 	builder.WriteString(fmt.Sprintf("Mode             | %s\n", "Azure RM"))
 	builder.WriteString(fmt.Sprintf("Config path      | %s\n", configDir))
 	builder.WriteString(fmt.Sprintf("Subscription Id  | %s\n", scope))
