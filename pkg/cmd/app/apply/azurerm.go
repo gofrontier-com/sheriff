@@ -47,13 +47,19 @@ func init() {
 func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
 
+	var warnings []string
+
 	output.PrintlnInfo("Initialising...")
 
 	output.PrintlnInfo("- Loading and validating config")
 
 	config, err := azurerm_config.Load(configDir)
 	if err != nil {
-		return err
+		if _, ok := err.(*core.ConfigurationEmptyError); ok {
+			warnings = append(warnings, "Configuration is empty, is the config directory path correct?")
+		} else {
+			return err
+		}
 	}
 
 	err = config.Validate()
@@ -81,6 +87,16 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 	output.PrintlnInfo("- Checking for necessary permissions\n")
 
 	CheckPermissions(clientFactory, graphServiceClient, scope)
+
+	if len(warnings) > 0 {
+		output.PrintlnWarn("!!! One or more warnings were generated !!!")
+
+		for _, w := range warnings {
+			output.PrintlnfWarn("- %s", w)
+		}
+
+		output.Printf("\n")
+	}
 
 	output.PrintlnInfo("Sheriff is ready to go!\n")
 

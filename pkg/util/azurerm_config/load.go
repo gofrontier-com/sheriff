@@ -106,5 +106,9 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		Users:                        users,
 	}
 
+	if len(configurationData.Groups) == 0 && len(configurationData.Users) == 0 {
+		return &configurationData, &core.ConfigurationEmptyError{}
+	}
+
 	return &configurationData, nil
 }

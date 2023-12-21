@@ -109,3 +109,5 @@ type RoleManagementPolicyUpdate struct {
 	RoleName             string
 	Scope                string
 }
+
+type ConfigurationEmptyError struct{}
