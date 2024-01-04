@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/frontierdigital/sheriff/pkg/cmd/app/validate"
-	"github.com/frontierdigital/utils/output"
+	"github.com/gofrontier-com/go-utils/output"
+	"github.com/gofrontier-com/sheriff/pkg/cmd/app/validate"
 	"github.com/spf13/cobra"
 )
 

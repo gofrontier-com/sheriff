@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/common-nighthawk/go-figure"
-	"github.com/frontierdigital/sheriff/pkg/cmd/sheriff"
-	"github.com/frontierdigital/utils/output"
+	"github.com/gofrontier-com/go-utils/output"
+	"github.com/gofrontier-com/sheriff/pkg/cmd/sheriff"
 )
 
 var (

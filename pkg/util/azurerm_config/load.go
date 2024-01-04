@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/frontierdigital/sheriff/pkg/core"
+	"github.com/gofrontier-com/sheriff/pkg/core"
 	"gopkg.in/yaml.v2"
 )
 

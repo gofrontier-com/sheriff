@@ -1,10 +1,10 @@
 package sheriff
 
 import (
-	"github.com/frontierdigital/sheriff/pkg/cmd/cli/apply"
-	"github.com/frontierdigital/sheriff/pkg/cmd/cli/plan"
-	"github.com/frontierdigital/sheriff/pkg/cmd/cli/validate"
-	vers "github.com/frontierdigital/sheriff/pkg/cmd/cli/version"
+	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/apply"
+	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/plan"
+	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/validate"
+	vers "github.com/gofrontier-com/sheriff/pkg/cmd/cli/version"
 	"github.com/spf13/cobra"
 )
 

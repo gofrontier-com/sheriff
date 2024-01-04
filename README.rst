@@ -1,7 +1,7 @@
-.. image:: https://pkg.go.dev/badge/github.com/frontierdigital/sheriff.svg
-    :target: https://pkg.go.dev/github.com/frontierdigital/sheriff
-.. image:: https://github.com/frontierdigital/sheriff/actions/workflows/ci.yml/badge.svg
-    :target: https://github.com/frontierdigital/sheriff/actions/workflows/ci.yml
+.. image:: https://pkg.go.dev/badge/github.com/gofrontier-com/sheriff.svg
+    :target: https://pkg.go.dev/github.com/gofrontier-com/sheriff
+.. image:: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml
 
 =======
 Sheriff
@@ -61,7 +61,7 @@ Download
 Release
 ~~~~~~~
 
-Binaries and packages of the latest stable release are available at `https://github.com/frontierdigital/sheriff/releases <https://github.com/frontierdigital/sheriff/releases>`_.
+Binaries and packages of the latest stable release are available at `https://github.com/gofrontier-com/sheriff/releases <https://github.com/gofrontier-com/sheriff/releases>`_.
 
 ~~~~~~~~~
 Extension

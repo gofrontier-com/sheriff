@@ -1,8 +1,8 @@
 package validate
 
 import (
-	"github.com/frontierdigital/sheriff/pkg/util/azurerm_config"
-	"github.com/frontierdigital/utils/output"
+	"github.com/gofrontier-com/go-utils/output"
+	"github.com/gofrontier-com/sheriff/pkg/util/azurerm_config"
 )
 
 func ValidateAzureRm(configDir string) error {
