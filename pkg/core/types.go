@@ -12,9 +12,6 @@ type activeAssignments struct {
 	Subscription   []*ActiveAssignment            `yaml:"subscription" validate:"dive"`
 }
 
-type AppConfig struct {
-}
-
 type ActiveAssignment struct {
 	PrincipalName string
 	RoleName      string `yaml:"roleName" validate:"required"`
@@ -22,9 +19,9 @@ type ActiveAssignment struct {
 }
 
 type AzureRmConfig struct {
-	Groups                       []*Principal                   `validate:"dive"` // TODO: Make private
-	RoleManagementPolicyRulesets []*RoleManagementPolicyRuleset `validate:"dive"` // TODO: Make private
-	Users                        []*Principal                   `validate:"dive"` // TODO: Make private
+	Groups                      []*Principal                 `validate:"dive"` // TODO: Make private
+	RoleManagementPolicyPatches []*RoleManagementPolicyPatch `validate:"dive"` // TODO: Make private
+	Users                       []*Principal                 `validate:"dive"` // TODO: Make private
 }
 
 type EligibleAssignment struct {
@@ -99,9 +96,14 @@ type RoleEligibilityScheduleUpdate struct {
 	StartDateTime                      *time.Time
 }
 
-type RoleManagementPolicyRuleset struct {
-	Name  string
-	Rules []armauthorization.RoleManagementPolicyRuleClassification
+type RoleManagementPolicyRulePatch struct {
+	ID    string                 `yaml:"id"`
+	Patch map[string]interface{} `yaml:"patch"`
+}
+
+type RoleManagementPolicyPatch struct {
+	Name  string                           `yaml:"name"`
+	Rules []*RoleManagementPolicyRulePatch `yaml:"rules"`
 }
 
 type RoleManagementPolicyUpdate struct {

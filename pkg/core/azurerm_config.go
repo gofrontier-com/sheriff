@@ -27,6 +27,10 @@ func (c *AzureRmConfig) Validate() error {
 	validate.RegisterStructValidation(ActiveAssignmentsStructLevelValidation, activeAssignments{})
 	validate.RegisterStructValidation(AzureRmConfigStructLevelValidation, AzureRmConfig{})
 
+	// TODO: Catch missing policies
+	// TODO: Validate eligible assignments
+	// TODO: Validate policies and policy conflicts
+
 	err := validate.Struct(c)
 	if err != nil {
 		return err
