@@ -67,7 +67,7 @@ Binaries and packages of the latest stable release are available at `https://git
 Extension
 ~~~~~~~~~
 
-The Sheriff extension for Azure DevOps is available from `Visual Studio Marketplace <https://marketplace.visualstudio.com/items?itemName=frontierdigital.sheriff>`_, which will automatically install Sheriff via a task.
+The Sheriff extension for Azure DevOps is available from `Visual Studio Marketplace <https://marketplace.visualstudio.com/items?itemName=gofrontier.sheriff>`_, which will automatically install Sheriff via a task.
 
 -------------
 Configuration
@@ -174,3 +174,9 @@ Groups
 ~~~~~~
 
 *Coming soon...*
+
+------------
+Contributing
+------------
+
+We welcome contributions to this repository. Please see `CONTRIBUTING.md <https://github.com/gofrontier-com/azurerm-terraform-modules/tree/main/CONTRIBUTING.md>`_ for more information.
