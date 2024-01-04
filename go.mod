@@ -1,4 +1,4 @@
-module github.com/frontierdigital/sheriff
+module github.com/gofrontier-com/sheriff
 
 go 1.20
 
@@ -7,8 +7,9 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
-	github.com/frontierdigital/utils v0.0.10
+	github.com/evanphx/json-patch/v5 v5.7.0
 	github.com/go-playground/validator/v10 v10.16.0
+	github.com/gofrontier-com/go-utils v0.1.0
 	github.com/google/uuid v1.4.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.25.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -23,7 +24,6 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
 	github.com/cjlapao/common-go v0.0.39 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/evanphx/json-patch/v5 v5.7.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect

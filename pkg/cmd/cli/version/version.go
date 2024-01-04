@@ -1,7 +1,7 @@
 package version
 
 import (
-	"github.com/frontierdigital/utils/output"
+	"github.com/gofrontier-com/go-utils/output"
 	"github.com/spf13/cobra"
 	goVersion "go.hein.dev/go-version"
 )
