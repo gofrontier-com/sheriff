@@ -20,7 +20,7 @@ func NewCmdValidateAzureRm() *cobra.Command {
 		Use:   "azurerm",
 		Short: "Validate Azure RM config",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			PrintHeader(configDir)
+			printHeader(configDir)
 
 			if err := validate.ValidateAzureRm(configDir); err != nil {
 				return err
@@ -40,7 +40,7 @@ func NewCmdValidateAzureRm() *cobra.Command {
 	return cmd
 }
 
-func PrintHeader(configDir string) {
+func printHeader(configDir string) {
 	builder := &strings.Builder{}
 	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
 	builder.WriteString(fmt.Sprintf("Action       | %s\n", "Validate"))

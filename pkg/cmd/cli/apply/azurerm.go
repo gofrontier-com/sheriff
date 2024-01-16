@@ -22,7 +22,7 @@ func NewCmdApplyAzureRm() *cobra.Command {
 		Use:   "azurerm",
 		Short: "Apply Azure Resource Manager config",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			PrintHeader(configDir, subscriptionId)
+			printHeader(configDir, subscriptionId)
 
 			if err := apply.ApplyAzureRm(configDir, subscriptionId, planOnly); err != nil {
 				return err
@@ -46,7 +46,7 @@ func NewCmdApplyAzureRm() *cobra.Command {
 	return cmd
 }
 
-func PrintHeader(configDir string, scope string) {
+func printHeader(configDir string, scope string) {
 	var action string
 	if planOnly {
 		action = "Apply (plan-only)"

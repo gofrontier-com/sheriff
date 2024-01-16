@@ -21,7 +21,7 @@ func NewCmdPlanAzureRm() *cobra.Command {
 		Use:   "azurerm",
 		Short: "Plan Azure Resource Manager config changes",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			PrintHeader(configDir, subscriptionId)
+			printHeader(configDir, subscriptionId)
 
 			if err := apply.ApplyAzureRm(configDir, subscriptionId, true); err != nil {
 				return err
@@ -44,7 +44,7 @@ func NewCmdPlanAzureRm() *cobra.Command {
 	return cmd
 }
 
-func PrintHeader(configDir string, scope string) {
+func printHeader(configDir string, scope string) {
 	builder := &strings.Builder{}
 	builder.WriteString(fmt.Sprintf("%s\n", strings.Repeat("~", 92)))
 	builder.WriteString(fmt.Sprintf("Action           | %s\n", "Plan"))
