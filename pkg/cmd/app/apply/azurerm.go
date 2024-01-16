@@ -29,22 +29,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-//go:embed default_role_management_policy.json
 var defaultRoleManagementPolicyPropertiesData string
-
-// var defaultRoleManagementPolicyProperties armauthorization.RoleManagementPolicyProperties
-
-func init() {
-	// roleManagementPolicyProperties := armauthorization.RoleManagementPolicyProperties{}
-	// err := defaultRoleManagementPolicyProperties.UnmarshalJSON([]byte(defaultRoleManagementPolicyPropertiesData))
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defaultRoleManagementPolicyRuleset = &core.RoleManagementPolicyRuleset{
-	// 	Name:  "default",
-	// 	Rules: roleManagementPolicyProperties.Rules,
-	// }
-}
 
 func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
