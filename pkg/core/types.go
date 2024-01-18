@@ -19,18 +19,18 @@ type ActiveAssignment struct {
 }
 
 type AzureRmConfig struct {
-	Groups                      []*Principal                 `validate:"dive"` // TODO: Make private
-	RoleManagementPolicyPatches []*RoleManagementPolicyPatch `validate:"dive"` // TODO: Make private
-	Users                       []*Principal                 `validate:"dive"` // TODO: Make private
+	Groups                       []*Principal                   `validate:"dive"` // TODO: Make private
+	RoleManagementPolicyRulesets []*RoleManagementPolicyRuleset `validate:"dive"` // TODO: Make private
+	Users                        []*Principal                   `validate:"dive"` // TODO: Make private
 }
 
 type EligibleAssignment struct {
-	EndDateTime              *time.Time `yaml:"endDateTime"`
-	PrincipalName            string
-	RoleManagementPolicyName *string `yaml:"roleManagementPolicyName"`
-	RoleName                 string  `yaml:"roleName" validate:"required"`
-	Scope                    string
-	StartDateTime            *time.Time `yaml:"startDateTime"`
+	EndDateTime                     *time.Time `yaml:"endDateTime"`
+	PrincipalName                   string
+	RoleManagementPolicyRulesetName *string `yaml:"roleManagementPolicyRulesetName"`
+	RoleName                        string  `yaml:"roleName" validate:"required"`
+	Scope                           string
+	StartDateTime                   *time.Time `yaml:"startDateTime"`
 }
 
 type eligibleAssignments struct {
@@ -96,14 +96,14 @@ type RoleEligibilityScheduleUpdate struct {
 	StartDateTime                      *time.Time
 }
 
-type RoleManagementPolicyRulePatch struct {
+type RoleManagementPolicyRule struct {
 	ID    string                 `yaml:"id"`
 	Patch map[string]interface{} `yaml:"patch"`
 }
 
-type RoleManagementPolicyPatch struct {
-	Name  string                           `yaml:"name"`
-	Rules []*RoleManagementPolicyRulePatch `yaml:"rules"`
+type RoleManagementPolicyRuleset struct {
+	Name  string                      `yaml:"name"`
+	Rules []*RoleManagementPolicyRule `yaml:"rules"`
 }
 
 type RoleManagementPolicyUpdate struct {

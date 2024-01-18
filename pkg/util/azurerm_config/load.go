@@ -9,12 +9,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func loadRoleManagementPolicyPatches(patchesDirPath string) ([]*core.RoleManagementPolicyPatch, error) {
-	var roleManagementPolicyPatches []*core.RoleManagementPolicyPatch
+func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManagementPolicyRuleset, error) {
+	var roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
 
 	if _, err := os.Stat(patchesDirPath); err != nil {
 		if os.IsNotExist(err) {
-			return roleManagementPolicyPatches, nil
+			return roleManagementPolicyRulesets, nil
 		}
 	}
 
@@ -30,19 +30,19 @@ func loadRoleManagementPolicyPatches(patchesDirPath string) ([]*core.RoleManagem
 			return nil, err
 		}
 
-		var roleManagementPolicyPatch core.RoleManagementPolicyPatch
+		var roleManagementPolicyRuleset core.RoleManagementPolicyRuleset
 
-		err = yaml.Unmarshal(yamlFile, &roleManagementPolicyPatch)
+		err = yaml.Unmarshal(yamlFile, &roleManagementPolicyRuleset)
 		if err != nil {
 			return nil, err
 		}
 
-		roleManagementPolicyPatch.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		roleManagementPolicyRuleset.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
 
-		roleManagementPolicyPatches = append(roleManagementPolicyPatches, &roleManagementPolicyPatch)
+		roleManagementPolicyRulesets = append(roleManagementPolicyRulesets, &roleManagementPolicyRuleset)
 	}
 
-	return roleManagementPolicyPatches, err
+	return roleManagementPolicyRulesets, err
 }
 
 func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
@@ -92,15 +92,15 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
-	roleManagementPolicyPatches, err := loadRoleManagementPolicyPatches(filepath.Join(configDirPath, "policies"))
+	roleManagementPolicyRulesets, err := loadRoleManagementPolicyRulesets(filepath.Join(configDirPath, "rulesets"))
 	if err != nil {
 		return nil, err
 	}
 
 	configurationData := core.AzureRmConfig{
-		Groups:                      groups,
-		RoleManagementPolicyPatches: roleManagementPolicyPatches,
-		Users:                       users,
+		Groups:                       groups,
+		RoleManagementPolicyRulesets: roleManagementPolicyRulesets,
+		Users:                        users,
 	}
 
 	if len(configurationData.Groups) == 0 && len(configurationData.Users) == 0 {

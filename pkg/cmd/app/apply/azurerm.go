@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/go-test/deep"
 	"github.com/gofrontier-com/go-utils/output"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/azurerm_config"
@@ -23,13 +23,12 @@ import (
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_management_policy"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_management_policy_assignment"
+	"github.com/gofrontier-com/sheriff/pkg/util/role_management_policy_classification_rule"
 	"github.com/gofrontier-com/sheriff/pkg/util/user"
 	"github.com/google/uuid"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"golang.org/x/exp/slices"
 )
-
-var defaultRoleManagementPolicyPropertiesData string
 
 func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
@@ -214,7 +213,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	roleManagementPolicyUpdates, err := getRoleManagementPolicyUpdates(
 		clientFactory,
-		config.RoleManagementPolicyPatches,
+		config.RoleManagementPolicyRulesets,
 		append(groupEligibleAssignments, userEligibleAssignments...),
 	)
 	if err != nil {
@@ -1191,44 +1190,54 @@ func getRoleEligibilityScheduleUpdates(
 
 func getRoleManagementPolicyUpdates(
 	clientFactory *armauthorization.ClientFactory,
-	roleManagementPolicyPatches []*core.RoleManagementPolicyPatch,
+	roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset,
 	eligibleAssignments []*core.EligibleAssignment,
 ) ([]*core.RoleManagementPolicyUpdate, error) {
 	var roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate
 
 	for _, a := range eligibleAssignments {
-		roleManagementPolicyProperties := armauthorization.RoleManagementPolicyProperties{}
-		err := roleManagementPolicyProperties.UnmarshalJSON([]byte(defaultRoleManagementPolicyPropertiesData))
+		unmodifiedRoleManagementPolicyAssignment, err := role_management_policy_assignment.GetUnmodifiedRoleManagementPolicyAssignmentByScope(
+			clientFactory,
+			a.Scope,
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		if a.RoleManagementPolicyName != nil {
-			idx := slices.IndexFunc(roleManagementPolicyPatches, func(r *core.RoleManagementPolicyPatch) bool {
-				return r.Name == *a.RoleManagementPolicyName
+		desiredRoleManagementPolicyProperties := armauthorization.RoleManagementPolicyProperties{
+			Rules: unmodifiedRoleManagementPolicyAssignment.Properties.EffectiveRules,
+		}
+
+		if a.RoleManagementPolicyRulesetName != nil {
+			idx := slices.IndexFunc(roleManagementPolicyRulesets, func(r *core.RoleManagementPolicyRuleset) bool {
+				return r.Name == *a.RoleManagementPolicyRulesetName
 			})
 
 			if idx == -1 {
-				return nil, fmt.Errorf("role management policy ruleset with name '%s' not found", *a.RoleManagementPolicyName)
+				return nil, fmt.Errorf("role management policy ruleset with name '%s' not found", *a.RoleManagementPolicyRulesetName)
 			}
 
-			roleManagementPolicyPatch := roleManagementPolicyPatches[idx]
+			roleManagementPolicyRuleset := roleManagementPolicyRulesets[idx]
 
-			for _, rulePatch := range roleManagementPolicyPatch.Rules {
-				rulePatchData, err := json.Marshal(rulePatch.Patch)
+			for _, rule := range roleManagementPolicyRuleset.Rules {
+				if rule.Patch == nil {
+					continue
+				}
+
+				rulePatchData, err := json.Marshal(rule.Patch)
 				if err != nil {
 					return nil, err
 				}
 
-				idx := slices.IndexFunc(roleManagementPolicyProperties.Rules, func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
-					return *s.GetRoleManagementPolicyRule().ID == rulePatch.ID
+				idx := slices.IndexFunc(desiredRoleManagementPolicyProperties.Rules, func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
+					return *s.GetRoleManagementPolicyRule().ID == rule.ID
 				})
 
 				if idx == -1 {
-					return nil, fmt.Errorf("rule with Id '%s' not found", rulePatch.ID)
+					return nil, fmt.Errorf("rule with Id '%s' not found", rule.ID)
 				}
 
-				rule := roleManagementPolicyProperties.Rules[idx]
+				rule := desiredRoleManagementPolicyProperties.Rules[idx]
 
 				switch *rule.GetRoleManagementPolicyRule().RuleType {
 				case armauthorization.RoleManagementPolicyRuleTypeRoleManagementPolicyApprovalRule:
@@ -1249,7 +1258,7 @@ func getRoleManagementPolicyUpdates(
 						return nil, err
 					}
 
-					roleManagementPolicyProperties.Rules[idx] = rule
+					desiredRoleManagementPolicyProperties.Rules[idx] = rule
 				case armauthorization.RoleManagementPolicyRuleTypeRoleManagementPolicyAuthenticationContextRule:
 					rule := rule.(*armauthorization.RoleManagementPolicyAuthenticationContextRule)
 
@@ -1268,7 +1277,7 @@ func getRoleManagementPolicyUpdates(
 						return nil, err
 					}
 
-					roleManagementPolicyProperties.Rules[idx] = rule
+					desiredRoleManagementPolicyProperties.Rules[idx] = rule
 				case armauthorization.RoleManagementPolicyRuleTypeRoleManagementPolicyEnablementRule:
 					rule := rule.(*armauthorization.RoleManagementPolicyEnablementRule)
 
@@ -1287,7 +1296,7 @@ func getRoleManagementPolicyUpdates(
 						return nil, err
 					}
 
-					roleManagementPolicyProperties.Rules[idx] = rule
+					desiredRoleManagementPolicyProperties.Rules[idx] = rule
 				case armauthorization.RoleManagementPolicyRuleTypeRoleManagementPolicyExpirationRule:
 					rule := rule.(*armauthorization.RoleManagementPolicyExpirationRule)
 
@@ -1306,7 +1315,7 @@ func getRoleManagementPolicyUpdates(
 						return nil, err
 					}
 
-					roleManagementPolicyProperties.Rules[idx] = rule
+					desiredRoleManagementPolicyProperties.Rules[idx] = rule
 				case armauthorization.RoleManagementPolicyRuleTypeRoleManagementPolicyNotificationRule:
 					rule := rule.(*armauthorization.RoleManagementPolicyNotificationRule)
 
@@ -1325,7 +1334,7 @@ func getRoleManagementPolicyUpdates(
 						return nil, err
 					}
 
-					roleManagementPolicyProperties.Rules[idx] = rule
+					desiredRoleManagementPolicyProperties.Rules[idx] = rule
 				default:
 					return nil, fmt.Errorf("unknown rule type '%s'", *rule.GetRoleManagementPolicyRule().RuleType)
 				}
@@ -1341,74 +1350,35 @@ func getRoleManagementPolicyUpdates(
 			return nil, err
 		}
 
-		roleManagementPolicyIdParts := strings.Split(*roleManagementPolicyAssignment.Properties.PolicyID, "/")
-		roleManagementPolicy, err := role_management_policy.GetRoleManagementPolicyById(
-			clientFactory,
-			*roleManagementPolicyAssignment.Properties.Scope,
-			roleManagementPolicyIdParts[len(roleManagementPolicyIdParts)-1],
+		slices.SortFunc(
+			roleManagementPolicyAssignment.Properties.EffectiveRules,
+			role_management_policy_classification_rule.SortByID,
 		)
-		if err != nil {
-			return nil, err
-		}
 
-		// roleManagementPolicyPropertiesData, err := roleManagementPolicyProperties.MarshalJSON()
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// println(string(roleManagementPolicyPropertiesData))
+		slices.SortFunc(
+			desiredRoleManagementPolicyProperties.Rules,
+			role_management_policy_classification_rule.SortByID,
+		)
 
-		// existingRoleManagementPolicyPropertiesData, err := roleManagementPolicy.Properties.MarshalJSON()
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// println(string(existingRoleManagementPolicyPropertiesData))
+		diff := deep.Equal(roleManagementPolicyAssignment.Properties.EffectiveRules, desiredRoleManagementPolicyProperties.Rules)
+		if diff != nil {
+			roleManagementPolicyIdParts := strings.Split(*roleManagementPolicyAssignment.Properties.PolicyID, "/")
+			roleManagementPolicy, err := role_management_policy.GetRoleManagementPolicyById(
+				clientFactory,
+				*roleManagementPolicyAssignment.Properties.Scope,
+				roleManagementPolicyIdParts[len(roleManagementPolicyIdParts)-1],
+			)
+			if err != nil {
+				return nil, err
+			}
 
-		if !reflect.DeepEqual(roleManagementPolicy.Properties.Rules, roleManagementPolicyProperties.Rules) {
-			roleManagementPolicy.Properties.Rules = roleManagementPolicyProperties.Rules
+			roleManagementPolicy.Properties.Rules = desiredRoleManagementPolicyProperties.Rules
 			roleManagementPolicyUpdates = append(roleManagementPolicyUpdates, &core.RoleManagementPolicyUpdate{
 				RoleManagementPolicy: roleManagementPolicy,
 				RoleName:             *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.RoleDefinition.DisplayName,
 				Scope:                *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.Scope.ID,
 			})
 		}
-
-		// updateRequired := false
-		// for _, r := range roleManagementPolicyRuleset.Rules {
-		// 	ruleId := r.GetRoleManagementPolicyRule().ID
-		// 	idx := slices.IndexFunc(roleManagementPolicy.Properties.Rules, func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
-		// 		return *s.GetRoleManagementPolicyRule().ID == *ruleId
-		// 	})
-
-		// 	if idx == -1 {
-		// 		return nil, fmt.Errorf("rule with Id '%s' not found", *ruleId)
-		// 	}
-
-		// 	existingRule := roleManagementPolicy.Properties.Rules[idx]
-
-		// 	ruleData, err := json.Marshal(r)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-
-		// 	existingRuleData, err := json.Marshal(existingRule)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-
-		// 	if string(ruleData) != string(existingRuleData) {
-		// 		updateRequired = true
-		// 		break
-		// 	}
-		// }
-
-		// if updateRequired {
-		// 	roleManagementPolicy.Properties.Rules = roleManagementPolicyRuleset.Rules
-		// 	roleManagementPolicyUpdates = append(roleManagementPolicyUpdates, &core.RoleManagementPolicyUpdate{
-		// 		RoleManagementPolicy: roleManagementPolicy,
-		// 		RoleName:             *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.RoleDefinition.DisplayName,
-		// 		Scope:                *roleManagementPolicyAssignment.Properties.PolicyAssignmentProperties.Scope.ID,
-		// 	})
-		// }
 	}
 
 	return roleManagementPolicyUpdates, nil
