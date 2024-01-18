@@ -103,6 +103,120 @@ Configuration of role assigments is managed via YAML files per group and/or user
     resources: {}
 
 
+Configuration of role management policies is managed via YAML files per ruleset. Rules defined in a ruleset are patched into the default organisation role management policy.
+
+.. code:: yaml
+
+  rules: []
+
+Examples
+~~~~~~~~
+
+Active assignment for group at subscription scope
+-------------------------------------------------
+
+``groups/Engineers.yml``
+
+.. code:: yaml
+
+  active:
+    subscription:
+      - roleName: Reader
+
+Active assignment for user at resource group scope
+--------------------------------------------------
+
+``users/john@gofrontier.com.yml``
+
+.. code:: yaml
+
+  active:
+    resourceGroups:
+      rg-dev-virtualmachine:
+        - roleName: Contributor
+
+Active assignment for user at resource scope
+--------------------------------------------
+
+``users/john@gofrontier.com.yml``
+
+.. code:: yaml
+
+  active:
+    resources:
+      rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
+        - roleName: Network Contributor
+
+Eligible assignment for group at subscription scope
+---------------------------------------------------
+
+``groups/SRE.yml``
+
+.. code:: yaml
+
+  eligible:
+    subscription:
+      - roleName: Disk Restore Operator
+        endDateTime: 2024-12-31T00:00:00Z
+
+By default, Entra ID requires that eligible assignments have an expiry date. To create an eligible assignment that never expires, you must create a role management policy ruleset that disables this requirement.
+
+``rulesets/NoExpiry.yml``
+
+.. code:: yaml
+
+  rules:
+    - id: Expiration_Admin_Eligibility
+      patch:
+        isExpirationRequired: false
+
+With the above created, you can now reference the ruleset in the eligible assignment and omit an expiry date.
+
+``groups/SRE.yml``
+
+.. code:: yaml
+
+  eligible:
+    subscription:
+      - roleName: Disk Restore Operator
+        roleManagementPolicyRulesetName: NoExpiry
+
+Eligible assignment for user at resource scope with approval
+------------------------------------------------------------
+
+``rulesets/ApprovalRequiredNoExpiry.yml``
+
+.. code:: yaml
+
+  rules:
+    - id: Approval_EndUser_Assignment
+      patch:
+        setting:
+          approvalStages:
+            - approvalStageTimeOutInDays: 1
+              escalationTimeInMinutes: 0
+              isApproverJustificationRequired: true
+              isEscalationEnabled: false
+              primaryApprovers:
+                - userType: Group
+                  isBackup: false
+                  id: abd8337a-b700-4de5-a800-006d893fc015
+                  description: SeniorEngineers
+          isApprovalRequired: true
+    - id: Expiration_Admin_Eligibility
+      patch:
+        isExpirationRequired: false
+
+``users/john@gofrontier.com.yml``
+
+.. code:: yaml
+
+  eligible:
+    resources:
+      rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
+        - roleName: Network Contributor
+          roleManagementPolicyRulesetName: ApprovalRequiredNoExpiry
+
 ~~~~~~~~~~~~~~~~~~~~~
 Microsoft Entra roles
 ~~~~~~~~~~~~~~~~~~~~~

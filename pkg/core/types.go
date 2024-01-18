@@ -97,8 +97,8 @@ type RoleEligibilityScheduleUpdate struct {
 }
 
 type RoleManagementPolicyRule struct {
-	ID    string                 `yaml:"id"`
-	Patch map[string]interface{} `yaml:"patch"`
+	ID    string      `yaml:"id"`
+	Patch interface{} `yaml:"patch"`
 }
 
 type RoleManagementPolicyRuleset struct {

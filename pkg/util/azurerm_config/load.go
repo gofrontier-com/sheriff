@@ -9,6 +9,22 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func convertPatchStruct(i interface{}) interface{} {
+	switch x := i.(type) {
+	case map[interface{}]interface{}:
+		m2 := map[string]interface{}{}
+		for k, v := range x {
+			m2[k.(string)] = convertPatchStruct(v)
+		}
+		return m2
+	case []interface{}:
+		for i, v := range x {
+			x[i] = convertPatchStruct(v)
+		}
+	}
+	return i
+}
+
 func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManagementPolicyRuleset, error) {
 	var roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
 
@@ -38,6 +54,10 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 		}
 
 		roleManagementPolicyRuleset.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+
+		for _, r := range roleManagementPolicyRuleset.Rules {
+			r.Patch = convertPatchStruct(r.Patch)
+		}
 
 		roleManagementPolicyRulesets = append(roleManagementPolicyRulesets, &roleManagementPolicyRuleset)
 	}
