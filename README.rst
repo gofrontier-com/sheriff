@@ -3,6 +3,8 @@
 .. image:: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml/badge.svg
     :target: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml
 
+|
+
 .. image:: logo.png
   :width: 200
   :alt: Sheriff logo
