@@ -1,3 +1,8 @@
+.. image:: https://pkg.go.dev/badge/github.com/gofrontier-com/sheriff.svg
+    :target: https://pkg.go.dev/github.com/gofrontier-com/sheriff
+.. image:: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml
+
 .. image:: logo.png
   :width: 200
   :alt: Sheriff logo
@@ -6,11 +11,6 @@
 =======
 Sheriff
 =======
-
-.. image:: https://pkg.go.dev/badge/github.com/gofrontier-com/sheriff.svg
-    :target: https://pkg.go.dev/github.com/gofrontier-com/sheriff
-.. image:: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml/badge.svg
-    :target: https://github.com/gofrontier-com/sheriff/actions/workflows/ci.yml
 
 Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
 and **Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM)** using desired state configuration.
