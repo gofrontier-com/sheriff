@@ -5,10 +5,9 @@
 
 |
 
-.. image:: logo.png
-  :width: 200
-  :alt: Sheriff logo
-  :align: center
+.. raw:: html
+
+  <img src="logo.png" align="center" width="200px" alt="Sheriff logo">
 
 =======
 Sheriff
