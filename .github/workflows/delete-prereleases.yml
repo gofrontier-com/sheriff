@@ -1,0 +1,17 @@
+---
+name: Delete pre-releases
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dev-drprasad/delete-older-releases@v0.3.2
+        with:
+          delete_prerelease_only: true
+          delete_tags: true
+          keep_latest: 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
