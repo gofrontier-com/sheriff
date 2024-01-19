@@ -6,13 +6,15 @@
 |
 
 
-.. raw:: html
-
-  <img src="logo.png" align="right" width="200px" alt="Sheriff logo">
 
 =======
 Sheriff
 =======
+
+.. raw:: html
+
+  <img src="logo.png" align="left" width="200px" alt="Sheriff logo">
+
 
 Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
 and **Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM)** using desired state configuration.
