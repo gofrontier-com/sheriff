@@ -1,6 +1,6 @@
 module github.com/gofrontier-com/sheriff
 
-go 1.20
+go 1.21
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.0
@@ -9,6 +9,7 @@ require (
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/evanphx/json-patch/v5 v5.7.0
 	github.com/go-playground/validator/v10 v10.16.0
+	github.com/go-test/deep v1.1.0
 	github.com/gofrontier-com/go-utils v0.1.0
 	github.com/google/uuid v1.4.0
 	github.com/microsoftgraph/msgraph-sdk-go v1.25.0
