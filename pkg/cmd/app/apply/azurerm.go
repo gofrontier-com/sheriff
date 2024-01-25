@@ -30,6 +30,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+func init() {
+	deep.NilSlicesAreEmpty = true
+}
+
 func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
 
@@ -288,7 +292,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	for _, u := range roleManagementPolicyUpdates {
 		output.PrintlnfInfo(
-			"Creating updating role management policy for role \"%s\" at scope \"%s\"",
+			"Updating role management policy for role \"%s\" at scope \"%s\"",
 			u.RoleName,
 			u.Scope,
 		)

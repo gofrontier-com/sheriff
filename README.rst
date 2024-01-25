@@ -15,7 +15,7 @@ Sheriff
 =======
 
 Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
-and **Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM)** using desired state configuration.
+and **Microsoft Entra ID Privileged Identity Management (Microsoft Entra PIM)** using desired state configuration.
 
 .. contents:: Table of Contents
     :local:
@@ -50,15 +50,15 @@ Azure resources, what they can do with those resources, and what areas they have
 See `What is Azure role-based access control (Azure RBAC)? <https://learn.microsoft.com/en-us/azure/role-based-access-control/overview>`_ for more information.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)
+Microsoft Entra ID Privileged Identity Management (Microsoft Entra PIM)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Microsoft Entra Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
+Microsoft Entra ID Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
 enables you to manage, control, and monitor access to important resources in your organization.
 These resources include resources in Microsoft Entra ID, Azure, and other Microsoft Online Services
 such as Microsoft 365 or Microsoft Intune.
 
-See `What is Microsoft Entra Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
+See `What is Microsoft Entra ID Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
 
 --------
 Download
@@ -243,7 +243,7 @@ Usage
 .. code:: bash
 
   $ sheriff --help
-  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Priviliged Identity Management (PIM) configuration declaratively
+  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra ID Privileged Identity Management (PIM) configuration declaratively
 
   Usage:
     sheriff
