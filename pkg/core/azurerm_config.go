@@ -95,15 +95,23 @@ func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
 
 	rulesetReferences := []*RulesetReference{}
 
-	for _, p := range azureRmConfig.Groups {
-		for _, r := range p.Subscription.Policy {
-			rulesetReferences = append(rulesetReferences, r...)
+	for _, p := range append(azureRmConfig.Groups, azureRmConfig.Users...) {
+		if p.Subscription != nil {
+			for _, r := range p.Subscription.Policy {
+				rulesetReferences = append(rulesetReferences, r...)
+			}
 		}
-	}
 
-	for _, p := range azureRmConfig.Users {
-		for _, r := range p.Subscription.Policy {
-			rulesetReferences = append(rulesetReferences, r...)
+		for _, g := range p.ResourceGroups {
+			for _, r := range g.Policy {
+				rulesetReferences = append(rulesetReferences, r...)
+			}
+		}
+
+		for _, r := range p.Resources {
+			for _, s := range r.Policy {
+				rulesetReferences = append(rulesetReferences, s...)
+			}
 		}
 	}
 
@@ -117,6 +125,8 @@ func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
 	}
 
 	// TODO: Check for policy conflicts.
+
+	// TODO: Check to orphaned rulesets?
 }
 
 func ScopeConfigurationStructLevelValidation(sl validator.StructLevel) {

@@ -2,7 +2,7 @@ package role_eligibility_schedule
 
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
-	"github.com/ahmetb/go-linq"
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_definition"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
