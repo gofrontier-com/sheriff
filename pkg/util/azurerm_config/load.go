@@ -65,23 +65,36 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 	return roleManagementPolicyRulesets, err
 }
 
-func loadPolicies(policiesFilePath string) (*core.Policies, error) {
-	var policies *core.Policies
+func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
+	var policies []*core.Policy
 
-	if _, err := os.Stat(policiesFilePath); err != nil {
+	if _, err := os.Stat(policiesDirPath); err != nil {
 		if os.IsNotExist(err) {
 			return policies, nil
 		}
 	}
 
-	yamlFile, err := os.ReadFile(policiesFilePath)
+	entries, err := os.ReadDir(policiesDirPath)
 	if err != nil {
 		return nil, err
 	}
+	for _, e := range entries {
+		filePath := filepath.Join(policiesDirPath, e.Name())
+		yamlFile, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, err
+		}
 
-	err = yaml.Unmarshal(yamlFile, &policies)
-	if err != nil {
-		return nil, err
+		var policy core.Policy
+
+		err = yaml.Unmarshal(yamlFile, &policy)
+		if err != nil {
+			return nil, err
+		}
+
+		policy.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+
+		policies = append(policies, &policy)
 	}
 
 	return policies, nil
@@ -139,7 +152,10 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
-	policies, err := loadPolicies(filepath.Join(configDirPath, "policies.yml"))
+	policies, err := loadPolicies(filepath.Join(configDirPath, "policies"))
+	if err != nil {
+		return nil, err
+	}
 
 	configurationData := core.AzureRmConfig{
 		Groups:   groups,

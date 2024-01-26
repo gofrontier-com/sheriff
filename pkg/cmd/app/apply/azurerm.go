@@ -227,13 +227,16 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	output.PrintlnInfo("- Role management policies\n")
 
+	scopeRoleNameCombinations := config.GetScopeRoleNameCombinations(subscriptionId)
+
 	rulesetReferences := config.GetRulesetReferences(subscriptionId)
 
 	roleManagementPolicyUpdates, err := role_management_policy_update.GetRoleManagementPolicyUpdates(
 		clientFactory,
 		defaultRoleManagementPolicyPropertiesData,
-		config.Rulesets,
+		scopeRoleNameCombinations,
 		rulesetReferences,
+		config.Rulesets,
 	)
 	if err != nil {
 		return err

@@ -15,56 +15,79 @@ func (c *AzureRmConfig) GetGroupEligibilitySchedules(subscriptionId string) []*S
 	return getEligibilitySchedules(c.Groups, subscriptionId)
 }
 
+func (c *AzureRmConfig) GetRulesetReferences(subscriptionId string) []*RulesetReference {
+	rulesetReferences := []*RulesetReference{}
+
+	for _, p := range c.Policies {
+		if p.Subscription == nil {
+			continue
+		}
+
+		for _, r := range p.Subscription {
+			r.RoleName = p.Name
+			r.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
+			rulesetReferences = append(rulesetReferences, r)
+		}
+
+		resourceGroupNames := make([]string, 0, len(p.ResourceGroups))
+		for k := range p.ResourceGroups {
+			resourceGroupNames = append(resourceGroupNames, k)
+		}
+
+		for _, r := range resourceGroupNames {
+			for _, s := range p.ResourceGroups[r] {
+				s.RoleName = p.Name
+				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
+				rulesetReferences = append(rulesetReferences, s)
+			}
+		}
+
+		resourceNames := make([]string, 0, len(p.Resources))
+		for k := range p.Resources {
+			resourceNames = append(resourceNames, k)
+		}
+
+		for _, r := range resourceNames {
+			for _, s := range p.Resources[r] {
+				s.RoleName = p.Name
+				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
+				rulesetReferences = append(rulesetReferences, s)
+			}
+		}
+	}
+
+	return rulesetReferences
+}
+
+func (c *AzureRmConfig) GetScopeRoleNameCombinations(subscriptionId string) []*ScopeRoleNameCombination {
+	groupAssignmentSchedules := c.GetGroupAssignmentSchedules(subscriptionId)
+	userAssignmentSchedules := c.GetUserAssignmentSchedules(subscriptionId)
+	groupEligibilitySchedules := c.GetGroupEligibilitySchedules(subscriptionId)
+	userEligibilitySchedules := c.GetUserEligibilitySchedules(subscriptionId)
+
+	allSchedules := append(groupAssignmentSchedules, userAssignmentSchedules...)
+	allSchedules = append(allSchedules, groupEligibilitySchedules...)
+	allSchedules = append(allSchedules, userEligibilitySchedules...)
+
+	var scopeRoleNameCombinations []*ScopeRoleNameCombination
+	linq.From(allSchedules).SelectT(func(s *Schedule) *ScopeRoleNameCombination {
+		return &ScopeRoleNameCombination{
+			RoleName: s.RoleName,
+			Scope:    s.Scope,
+		}
+	}).DistinctByT(func(s *ScopeRoleNameCombination) string {
+		return fmt.Sprintf("%s:%s", s.Scope, s.RoleName)
+	}).ToSlice(&scopeRoleNameCombinations)
+
+	return scopeRoleNameCombinations
+}
+
 func (c *AzureRmConfig) GetUserAssignmentSchedules(subscriptionId string) []*Schedule {
 	return getAssignmentSchedules(c.Users, subscriptionId)
 }
 
 func (c *AzureRmConfig) GetUserEligibilitySchedules(subscriptionId string) []*Schedule {
 	return getEligibilitySchedules(c.Users, subscriptionId)
-}
-
-func (c *AzureRmConfig) GetRulesetReferences(subscriptionId string) []*RulesetReference {
-	rulesetReferences := []*RulesetReference{}
-
-	for k, r := range c.Policies.Subscription {
-		for _, s := range r {
-			s.RoleName = k
-			s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
-			rulesetReferences = append(rulesetReferences, s)
-		}
-	}
-
-	resourceGroupNames := make([]string, 0, len(c.Policies.ResourceGroups))
-	for k := range c.Policies.ResourceGroups {
-		resourceGroupNames = append(resourceGroupNames, k)
-	}
-
-	for _, r := range resourceGroupNames {
-		for k, s := range c.Policies.ResourceGroups[r] {
-			for _, t := range s {
-				t.RoleName = k
-				t.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
-				rulesetReferences = append(rulesetReferences, t)
-			}
-		}
-	}
-
-	resourceNames := make([]string, 0, len(c.Policies.Resources))
-	for k := range c.Policies.Resources {
-		resourceNames = append(resourceNames, k)
-	}
-
-	for _, r := range resourceNames {
-		for k, s := range c.Policies.Resources[r] {
-			for _, t := range s {
-				t.RoleName = k
-				t.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
-				rulesetReferences = append(rulesetReferences, t)
-			}
-		}
-	}
-
-	return rulesetReferences
 }
 
 func (c *AzureRmConfig) Validate() error {

@@ -7,8 +7,8 @@ import (
 )
 
 type AzureRmConfig struct {
-	Groups   []*Principal `validate:"dive"`
-	Policies *Policies
+	Groups   []*Principal                   `validate:"dive"`
+	Policies []*Policy                      `validate:"dive"`
 	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
 	Users    []*Principal                   `validate:"dive"`
 }
@@ -39,10 +39,11 @@ type RulesetReference struct {
 	Scope       string
 }
 
-type Policies struct {
-	Subscription   map[string][]*RulesetReference            `yaml:"subscription"`
-	ResourceGroups map[string]map[string][]*RulesetReference `yaml:"resourceGroups"`
-	Resources      map[string]map[string][]*RulesetReference `yaml:"resources"`
+type Policy struct {
+	Name           string
+	Subscription   []*RulesetReference            `yaml:"subscription"`
+	ResourceGroups map[string][]*RulesetReference `yaml:"resourceGroups"`
+	Resources      map[string][]*RulesetReference `yaml:"resources"`
 }
 
 type ScopeRoleNameCombination struct {

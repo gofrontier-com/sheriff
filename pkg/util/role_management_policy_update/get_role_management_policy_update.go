@@ -19,8 +19,9 @@ import (
 func GetRoleManagementPolicyUpdates(
 	clientFactory *armauthorization.ClientFactory,
 	defaultRoleManagementPolicyPropertiesData string,
-	roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset,
+	scopeRoleNameCombinations []*core.ScopeRoleNameCombination,
 	rulesetReferences []*core.RulesetReference,
+	roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset,
 ) ([]*core.RoleManagementPolicyUpdate, error) {
 	var roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate
 
@@ -34,10 +35,7 @@ func GetRoleManagementPolicyUpdates(
 		return s.RulesetName
 	}).ToSlice(&rulesetReferenceGroups)
 
-	for _, g := range rulesetReferenceGroups {
-		roleName := g.Key.(core.ScopeRoleNameCombination).RoleName
-		scope := g.Key.(core.ScopeRoleNameCombination).Scope
-
+	for _, c := range scopeRoleNameCombinations {
 		var desiredRoleManagementPolicyProperties armauthorization.RoleManagementPolicyProperties
 		err := desiredRoleManagementPolicyProperties.UnmarshalJSON([]byte(defaultRoleManagementPolicyPropertiesData))
 		if err != nil {
@@ -49,13 +47,22 @@ func GetRoleManagementPolicyUpdates(
 			role_management_policy_classification_rule.SortByID,
 		)
 
-		var thisRoleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
-		linq.From(roleManagementPolicyRulesets).WhereT(func(s *core.RoleManagementPolicyRuleset) bool {
-			return linq.From(g.Group).Contains(s.Name)
-		}).ToSlice(&thisRoleManagementPolicyRulesets)
+		thisRulesetReferenceGroup := linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
+			return g.Key.(core.ScopeRoleNameCombination).RoleName == c.RoleName && g.Key.(core.ScopeRoleNameCombination).Scope == c.Scope
+		})
 
-		if len(thisRoleManagementPolicyRulesets) != len(g.Group) {
-			panic("ruleset count does not match ruleset reference count")
+		var thisRoleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
+		if thisRulesetReferenceGroup != nil {
+			rulesetNames := thisRulesetReferenceGroup.(linq.Group).Group
+			linq.From(roleManagementPolicyRulesets).WhereT(func(s *core.RoleManagementPolicyRuleset) bool {
+				return linq.From(rulesetNames).Contains(s.Name)
+			}).ToSlice(&thisRoleManagementPolicyRulesets)
+
+			if len(thisRoleManagementPolicyRulesets) != len(rulesetNames) {
+				panic("ruleset count does not match ruleset reference count")
+			}
+		} else {
+			thisRoleManagementPolicyRulesets = []*core.RoleManagementPolicyRuleset{}
 		}
 
 		for _, roleManagementPolicyRuleset := range thisRoleManagementPolicyRulesets {
@@ -188,8 +195,8 @@ func GetRoleManagementPolicyUpdates(
 
 		roleManagementPolicyAssignment, err := role_management_policy_assignment.GetRoleManagementPolicyAssignmentByRole(
 			clientFactory,
-			scope,
-			roleName,
+			c.Scope,
+			c.RoleName,
 		)
 		if err != nil {
 			return nil, err
