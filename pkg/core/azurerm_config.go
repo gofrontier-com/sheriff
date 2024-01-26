@@ -19,14 +19,12 @@ func (c *AzureRmConfig) GetRulesetReferences(subscriptionId string) []*RulesetRe
 	rulesetReferences := []*RulesetReference{}
 
 	for _, p := range c.Policies {
-		if p.Subscription == nil {
-			continue
-		}
-
-		for _, r := range p.Subscription {
-			r.RoleName = p.Name
-			r.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
-			rulesetReferences = append(rulesetReferences, r)
+		if p.Subscription != nil {
+			for _, r := range p.Subscription {
+				r.RoleName = p.Name
+				r.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
+				rulesetReferences = append(rulesetReferences, r)
+			}
 		}
 
 		resourceGroupNames := make([]string, 0, len(p.ResourceGroups))
@@ -149,14 +147,12 @@ func getAssignmentSchedules(principals []*Principal, subscriptionId string) []*S
 	schedules := []*Schedule{}
 
 	for _, p := range principals {
-		if p.Subscription == nil {
-			continue
-		}
-
-		for _, s := range p.Subscription.Active {
-			s.PrincipalName = p.Name
-			s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
-			schedules = append(schedules, s)
+		if p.Subscription != nil {
+			for _, s := range p.Subscription.Active {
+				s.PrincipalName = p.Name
+				s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
+				schedules = append(schedules, s)
+			}
 		}
 
 		resourceGroupNames := make([]string, 0, len(p.ResourceGroups))
@@ -193,14 +189,12 @@ func getEligibilitySchedules(principals []*Principal, subscriptionId string) []*
 	schedules := []*Schedule{}
 
 	for _, p := range principals {
-		if p.Subscription == nil {
-			continue
-		}
-
-		for _, s := range p.Subscription.Eligible {
-			s.PrincipalName = p.Name
-			s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
-			schedules = append(schedules, s)
+		if p.Subscription != nil {
+			for _, s := range p.Subscription.Eligible {
+				s.PrincipalName = p.Name
+				s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
+				schedules = append(schedules, s)
+			}
 		}
 
 		resourceGroupNames := make([]string, 0, len(p.ResourceGroups))
