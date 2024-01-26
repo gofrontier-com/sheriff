@@ -65,6 +65,28 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 	return roleManagementPolicyRulesets, err
 }
 
+func loadPolicies(policiesFilePath string) (*core.Policies, error) {
+	var policies *core.Policies
+
+	if _, err := os.Stat(policiesFilePath); err != nil {
+		if os.IsNotExist(err) {
+			return policies, nil
+		}
+	}
+
+	yamlFile, err := os.ReadFile(policiesFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(yamlFile, &policies)
+	if err != nil {
+		return nil, err
+	}
+
+	return policies, nil
+}
+
 func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	var principals []*core.Principal
 
@@ -117,8 +139,11 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
+	policies, err := loadPolicies(filepath.Join(configDirPath, "policies.yml"))
+
 	configurationData := core.AzureRmConfig{
 		Groups:   groups,
+		Policies: policies,
 		Rulesets: roleManagementPolicyRulesets,
 		Users:    users,
 	}

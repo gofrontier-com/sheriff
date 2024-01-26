@@ -7,7 +7,8 @@ import (
 )
 
 type AzureRmConfig struct {
-	Groups   []*Principal                   `validate:"dive"`
+	Groups   []*Principal `validate:"dive"`
+	Policies *Policies
 	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
 	Users    []*Principal                   `validate:"dive"`
 }
@@ -20,24 +21,28 @@ type Principal struct {
 }
 
 type ScopeConfiguration struct {
-	Active   []*Schedule                    `yaml:"active"`
-	Eligible []*Schedule                    `yaml:"eligible"`
-	Policy   map[string][]*RulesetReference `yaml:"policy"`
+	Active   []*Schedule `yaml:"active"`
+	Eligible []*Schedule `yaml:"eligible"`
 }
 
 type Schedule struct {
-	EndDateTime                     *time.Time `yaml:"endDateTime"`
-	PrincipalName                   string
-	RoleManagementPolicyRulesetName *string `yaml:"roleManagementPolicyRulesetName"`
-	RoleName                        string  `yaml:"roleName" validate:"required"`
-	Scope                           string
-	StartDateTime                   *time.Time `yaml:"startDateTime"`
+	EndDateTime   *time.Time `yaml:"endDateTime"`
+	PrincipalName string
+	RoleName      string `yaml:"roleName" validate:"required"`
+	Scope         string
+	StartDateTime *time.Time `yaml:"startDateTime"`
 }
 
 type RulesetReference struct {
 	RoleName    string
 	RulesetName string `yaml:"rulesetName" validate:"required"`
 	Scope       string
+}
+
+type Policies struct {
+	Subscription   map[string][]*RulesetReference            `yaml:"subscription"`
+	ResourceGroups map[string]map[string][]*RulesetReference `yaml:"resourceGroups"`
+	Resources      map[string]map[string][]*RulesetReference `yaml:"resources"`
 }
 
 type ScopeRoleNameCombination struct {
