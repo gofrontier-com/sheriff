@@ -7,6 +7,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/group"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_definition"
@@ -60,6 +61,14 @@ func GetRoleAssignmentScheduleUpdates(
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *group.GetId()
 		})
+		existingGroupRoleAssignmentScheduleIdx2 := linq.From(existingGroupRoleAssignmentSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
+			return *s.Properties.Scope == a.Scope &&
+				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
+				*s.Properties.PrincipalID == *group.GetId()
+		})
+		if existingGroupRoleAssignmentScheduleIdx != existingGroupRoleAssignmentScheduleIdx2 {
+			panic("index mismatch")
+		}
 		if existingGroupRoleAssignmentScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role assignment schedule not found")
 		}
@@ -126,6 +135,14 @@ func GetRoleAssignmentScheduleUpdates(
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *user.GetId()
 		})
+		existingUserRoleAssignmentScheduleIdx2 := linq.From(existingUserRoleAssignmentSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
+			return *s.Properties.Scope == a.Scope &&
+				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
+				*s.Properties.PrincipalID == *user.GetId()
+		})
+		if existingUserRoleAssignmentScheduleIdx != existingUserRoleAssignmentScheduleIdx2 {
+			panic("index mismatch")
+		}
 		if existingUserRoleAssignmentScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role assignment schedule not found")
 		}
