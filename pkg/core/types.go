@@ -7,9 +7,9 @@ import (
 )
 
 type AzureRmConfig struct {
-	Groups                       []*Principal                   `validate:"dive"` // TODO: Make private
-	RoleManagementPolicyRulesets []*RoleManagementPolicyRuleset `validate:"dive"` // TODO: Make private
-	Users                        []*Principal                   `validate:"dive"` // TODO: Make private
+	Groups   []*Principal                   `validate:"dive"`
+	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
+	Users    []*Principal                   `validate:"dive"`
 }
 
 type Principal struct {
@@ -35,7 +35,14 @@ type Schedule struct {
 }
 
 type RulesetReference struct {
-	RulesetName string `yaml:"rulesetName"`
+	RoleName    string
+	RulesetName string `yaml:"rulesetName" validate:"required"`
+	Scope       string
+}
+
+type ScopeRoleNameCombination struct {
+	RoleName string
+	Scope    string
 }
 
 type RoleAssignmentScheduleCreate struct {
@@ -107,12 +114,12 @@ type RoleEligibilityScheduleUpdate struct {
 }
 
 type RoleManagementPolicyRule struct {
-	ID    string      `yaml:"id"`
-	Patch interface{} `yaml:"patch"`
+	ID    string      `yaml:"id" validate:"required"`
+	Patch interface{} `yaml:"patch" validate:"required"`
 }
 
 type RoleManagementPolicyRuleset struct {
-	Name  string                      `yaml:"name"`
+	Name  string
 	Rules []*RoleManagementPolicyRule `yaml:"rules"`
 }
 

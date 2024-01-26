@@ -1,11 +1,9 @@
 package role_eligibility_schedule
 
 import (
-	"slices"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/ahmetb/go-linq"
 	"github.com/gofrontier-com/sheriff/pkg/core"
-	"github.com/gofrontier-com/sheriff/pkg/util/filter"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_definition"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
@@ -24,8 +22,8 @@ func FilterForRoleEligibilitySchedulesToDelete(
 		}
 	}()
 
-	filtered = filter.Filter(existingRoleEligibilitySchedules, func(r *armauthorization.RoleEligibilitySchedule) bool {
-		idx := slices.IndexFunc(eligibilitySchedules, func(a *core.Schedule) bool {
+	linq.From(existingRoleEligibilitySchedules).WhereT(func(r *armauthorization.RoleEligibilitySchedule) bool {
+		any := linq.From(eligibilitySchedules).WhereT(func(a *core.Schedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				scope,
@@ -46,10 +44,10 @@ func FilterForRoleEligibilitySchedulesToDelete(
 			return *r.Properties.Scope == a.Scope &&
 				*roleDefinition.Properties.RoleName == a.RoleName &&
 				*principalName == a.PrincipalName
-		})
+		}).Any()
 
-		return idx == -1
-	})
+		return !any
+	}).ToSlice(&filtered)
 
 	return
 }

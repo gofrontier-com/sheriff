@@ -1,11 +1,9 @@
 package schedule
 
 import (
-	"slices"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/ahmetb/go-linq"
 	"github.com/gofrontier-com/sheriff/pkg/core"
-	"github.com/gofrontier-com/sheriff/pkg/util/filter"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_definition"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
@@ -24,8 +22,8 @@ func FilterForAssignmentSchedulesToCreate(
 		}
 	}()
 
-	filtered = filter.Filter(assignmentSchedules, func(a *core.Schedule) bool {
-		idx := slices.IndexFunc(existingRoleAssignmentSchedules, func(s *armauthorization.RoleAssignmentSchedule) bool {
+	linq.From(assignmentSchedules).WhereT(func(a *core.Schedule) bool {
+		any := linq.From(existingRoleAssignmentSchedules).WhereT(func(s *armauthorization.RoleAssignmentSchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				scope,
@@ -46,10 +44,10 @@ func FilterForAssignmentSchedulesToCreate(
 			return a.Scope == *s.Properties.Scope &&
 				a.RoleName == *roleDefinition.Properties.RoleName &&
 				a.PrincipalName == *principalName
-		})
+		}).Any()
 
-		return idx == -1
-	})
+		return !any
+	}).ToSlice(&filtered)
 
 	return
 }

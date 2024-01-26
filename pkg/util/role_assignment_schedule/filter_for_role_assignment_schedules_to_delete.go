@@ -1,11 +1,9 @@
 package role_assignment_schedule
 
 import (
-	"slices"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/gofrontier-com/sheriff/pkg/core"
-	"github.com/gofrontier-com/sheriff/pkg/util/filter"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_definition"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
@@ -24,8 +22,8 @@ func FilterForRoleAssignmentSchedulesToDelete(
 		}
 	}()
 
-	filtered = filter.Filter(existingRoleAssignmentSchedules, func(r *armauthorization.RoleAssignmentSchedule) bool {
-		idx := slices.IndexFunc(assignmentSchedules, func(a *core.Schedule) bool {
+	linq.From(existingRoleAssignmentSchedules).WhereT(func(r *armauthorization.RoleAssignmentSchedule) bool {
+		any := linq.From(assignmentSchedules).WhereT(func(a *core.Schedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				scope,
@@ -46,10 +44,10 @@ func FilterForRoleAssignmentSchedulesToDelete(
 			return *r.Properties.Scope == a.Scope &&
 				*roleDefinition.Properties.RoleName == a.RoleName &&
 				*principalName == a.PrincipalName
-		})
+		}).Any()
 
-		return idx == -1
-	})
+		return !any
+	}).ToSlice(&filtered)
 
 	return
 }

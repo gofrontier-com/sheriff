@@ -118,9 +118,9 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 	}
 
 	configurationData := core.AzureRmConfig{
-		Groups:                       groups,
-		RoleManagementPolicyRulesets: roleManagementPolicyRulesets,
-		Users:                        users,
+		Groups:   groups,
+		Rulesets: roleManagementPolicyRulesets,
+		Users:    users,
 	}
 
 	if len(configurationData.Groups) == 0 && len(configurationData.Users) == 0 {
