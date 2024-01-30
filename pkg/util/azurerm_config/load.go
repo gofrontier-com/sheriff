@@ -1,6 +1,7 @@
 package azurerm_config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +80,10 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 		return nil, err
 	}
 	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+
 		filePath := filepath.Join(policiesDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
@@ -136,7 +141,79 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	return principals, err
 }
 
+func validateDirStructure(configDirPath string) []error {
+	errors := []error{}
+
+	if _, err := os.Stat(configDirPath); err != nil {
+		if os.IsNotExist(err) {
+			return append(errors, fmt.Errorf("config dir path does not exist: %s", configDirPath))
+		}
+	}
+
+	entries, err := os.ReadDir(configDirPath)
+	if err != nil {
+		return append(errors, err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			errors = append(errors, fmt.Errorf("unexpected file in config dir: %s", e.Name()))
+			continue
+		}
+
+		if e.Name() == "groups" || e.Name() == "users" {
+			entries, err := os.ReadDir(filepath.Join(configDirPath, e.Name()))
+			if err != nil {
+				return append(errors, err)
+			}
+			for _, f := range entries {
+				if f.IsDir() {
+					errors = append(errors, fmt.Errorf("unexpected dir in %s: %s", e.Name(), f.Name()))
+				}
+			}
+
+			continue
+		}
+
+		if e.Name() == "policies" {
+			entries, err := os.ReadDir(filepath.Join(configDirPath, e.Name()))
+			if err != nil {
+				return append(errors, err)
+			}
+			for _, f := range entries {
+				if f.IsDir() {
+					if f.Name() == "rulesets" {
+						entries, err := os.ReadDir(filepath.Join(configDirPath, e.Name(), f.Name()))
+						if err != nil {
+							return append(errors, err)
+						}
+						for _, g := range entries {
+							if g.IsDir() {
+								errors = append(errors, fmt.Errorf("unexpected dir in %s: %s", f.Name(), g.Name()))
+							}
+						}
+
+						continue
+					}
+
+					errors = append(errors, fmt.Errorf("unexpected dir in %s: %s", e.Name(), f.Name()))
+				}
+			}
+
+			continue
+		}
+
+		errors = append(errors, fmt.Errorf("unexpected dir in config dir: %s", e.Name()))
+	}
+
+	return errors
+}
+
 func Load(configDirPath string) (*core.AzureRmConfig, error) {
+	errors := validateDirStructure(configDirPath)
+	if len(errors) > 0 {
+		return nil, fmt.Errorf("invalid config dir structure: %v", errors)
+	}
+
 	groups, err := loadPrincipals(filepath.Join(configDirPath, "groups"))
 	if err != nil {
 		return nil, err
@@ -147,7 +224,7 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
-	roleManagementPolicyRulesets, err := loadRoleManagementPolicyRulesets(filepath.Join(configDirPath, "rulesets"))
+	roleManagementPolicyRulesets, err := loadRoleManagementPolicyRulesets(filepath.Join(configDirPath, "policies", "rulesets"))
 	if err != nil {
 		return nil, err
 	}

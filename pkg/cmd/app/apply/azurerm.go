@@ -75,7 +75,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	output.PrintlnInfo("- Checking for necessary permissions\n")
 
-	CheckPermissions(clientFactory, graphServiceClient, scope)
+	checkPermissions(clientFactory, graphServiceClient, scope)
 
 	if len(warnings) > 0 {
 		output.PrintlnWarn("!!! One or more warnings were generated !!!")
@@ -248,7 +248,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		output.PrintlnInfo("Sheriff will perform the following actions:\n")
 	}
 
-	PrintPlan(
+	printPlan(
 		roleAssignmentScheduleCreates,
 		roleAssignmentScheduleUpdates,
 		roleAssignmentScheduleDeletes,
@@ -447,7 +447,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 	return nil
 }
 
-func CheckPermissions(
+func checkPermissions(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
@@ -502,7 +502,7 @@ func CheckPermissions(
 	return nil
 }
 
-func PrintPlan(
+func printPlan(
 	roleAssignmentScheduleCreates []*core.RoleAssignmentScheduleCreate,
 	roleAssignmentScheduleUpdates []*core.RoleAssignmentScheduleUpdate,
 	roleAssignmentScheduleDeletes []*core.RoleAssignmentScheduleDelete,
