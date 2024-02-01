@@ -135,10 +135,11 @@ in which both active and eligible role assignments are defined.
 Configuration of role management policies is managed via YAML files per role.
 Role configuration files reference one or more rulesets at the required scopes.
 
-!!!Important!!! Please note that role management policies are **not** inherited from parent scopes.
-This is by design in Microsoft Entra PIM and cannot be changed. Overriding the
-default role management policy for a given role at a particular scope must be done
-by referencing one or more rulesets at that exact scope.
+.. note::
+  Please note that role management policies are **not** inherited from parent scopes.
+  This is by design in Microsoft Entra PIM and cannot be changed. Overriding the
+  default role management policy for a given role at a particular scope must be done
+  by referencing one or more rulesets at that exact scope.
 
 ``policies/<role name>.yml``
 
