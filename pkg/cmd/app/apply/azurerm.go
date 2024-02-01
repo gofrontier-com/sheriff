@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
@@ -24,6 +25,7 @@ import (
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_delete"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_update"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_management_policy_update"
+	"github.com/golang-jwt/jwt/v5"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
@@ -75,6 +77,20 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		return err
 	}
 
+	accessToken, err := credential.GetToken(context.Background(), policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
+	if err != nil {
+		return err
+	}
+
+	token, err := jwt.Parse(accessToken.Token, nil)
+	if err != nil {
+		if err.Error() != "token is unverifiable: no keyfunc was provided" {
+			return err
+		}
+	}
+
+	subject := token.Claims.(jwt.MapClaims)["oid"].(string)
+
 	clientFactory, err := armauthorization.NewClientFactory(subscriptionId, credential, nil)
 	if err != nil {
 		return err
@@ -93,7 +109,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 	} else {
 		requiredActions = requiredActionsToApply
 	}
-	err = checkPermissions(clientFactory, graphServiceClient, scope, requiredActions)
+	err = checkPermissions(clientFactory, subject, scope, requiredActions)
 	if err != nil {
 		return err
 	}
@@ -472,20 +488,15 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 func checkPermissions(
 	clientFactory *armauthorization.ClientFactory,
-	graphServiceClient *msgraphsdkgo.GraphServiceClient,
+	principalId string,
 	scope string,
 	requiredActions []string,
 ) error {
-	me, err := graphServiceClient.Me().Get(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
 	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 
 	hasRequiredActions := false
 	roleAssignmentsClientListForScopeOptions := &armauthorization.RoleAssignmentsClientListForScopeOptions{
-		Filter: to.Ptr(fmt.Sprintf("assignedTo('%s')", *me.GetId())),
+		Filter: to.Ptr(fmt.Sprintf("assignedTo('%s')", principalId)),
 	}
 	pager := roleAssignmentsClient.NewListForScopePager(scope, roleAssignmentsClientListForScopeOptions)
 	for pager.More() {
