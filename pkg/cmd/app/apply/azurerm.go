@@ -56,7 +56,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		return err
 	}
 
-	output.PrintlnfInfo("- Authenticating to the Azure Management API")
+	output.PrintlnfInfo("- Authenticating to Azure Management and Microsoft Graph APIs")
 
 	credential, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
@@ -99,7 +99,8 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		clientFactory,
 		scope,
 		func(s *armauthorization.RoleAssignmentSchedule) bool {
-			return *s.Properties.PrincipalType == armauthorization.PrincipalTypeGroup
+			return *s.Properties.PrincipalType == armauthorization.PrincipalTypeGroup &&
+				*s.Properties.AssignmentType == armauthorization.AssignmentTypeAssigned
 		},
 	)
 	if err != nil {
@@ -112,7 +113,8 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		clientFactory,
 		scope,
 		func(s *armauthorization.RoleAssignmentSchedule) bool {
-			return *s.Properties.PrincipalType == armauthorization.PrincipalTypeUser
+			return *s.Properties.PrincipalType == armauthorization.PrincipalTypeUser &&
+				*s.Properties.AssignmentType == armauthorization.AssignmentTypeAssigned
 		},
 	)
 	if err != nil {

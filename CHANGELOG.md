@@ -1,1 +1,11 @@
 # Sheriff Changelog
+
+## 1.1.0
+
+### Breaking changes
+
+* Restructured the input data format for Azure RM mode.
+
+### Bug fixes
+
+* Activated eligible assignments are no longer mistaken for unwanted active assignments.
