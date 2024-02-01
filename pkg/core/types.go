@@ -6,60 +6,83 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 )
 
-type activeAssignments struct {
-	ResourceGroups map[string][]*ActiveAssignment `yaml:"resourceGroups" validate:"dive"`
-	Resources      map[string][]*ActiveAssignment `yaml:"resources" validate:"dive"`
-	Subscription   []*ActiveAssignment            `yaml:"subscription" validate:"dive"`
-}
-
-type ActiveAssignment struct {
-	PrincipalName string
-	RoleName      string `yaml:"roleName" validate:"required"`
-	Scope         string
-}
-
 type AzureRmConfig struct {
-	Groups                       []*Principal                   `validate:"dive"` // TODO: Make private
-	RoleManagementPolicyRulesets []*RoleManagementPolicyRuleset `validate:"dive"` // TODO: Make private
-	Users                        []*Principal                   `validate:"dive"` // TODO: Make private
-}
-
-type EligibleAssignment struct {
-	EndDateTime                     *time.Time `yaml:"endDateTime"`
-	PrincipalName                   string
-	RoleManagementPolicyRulesetName *string `yaml:"roleManagementPolicyRulesetName"`
-	RoleName                        string  `yaml:"roleName" validate:"required"`
-	Scope                           string
-	StartDateTime                   *time.Time `yaml:"startDateTime"`
-}
-
-type eligibleAssignments struct {
-	ResourceGroups map[string][]*EligibleAssignment `yaml:"resourceGroups" validate:"dive"`
-	Resources      map[string][]*EligibleAssignment `yaml:"resources" validate:"dive"`
-	Subscription   []*EligibleAssignment            `yaml:"subscription" validate:"dive"`
+	Groups   []*Principal                   `validate:"dive"`
+	Policies []*Policy                      `validate:"dive"`
+	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
+	Users    []*Principal                   `validate:"dive"`
 }
 
 type Principal struct {
-	Active   *activeAssignments   `yaml:"active"`
-	Eligible *eligibleAssignments `yaml:"eligible"`
-	Name     string
+	Name           string
+	Subscription   *ScopeConfiguration            `yaml:"subscription"`
+	ResourceGroups map[string]*ScopeConfiguration `yaml:"resourceGroups"`
+	Resources      map[string]*ScopeConfiguration `yaml:"resources"`
 }
 
-type RoleAssignmentCreate struct {
-	PrincipalName                  string
-	PrincipalType                  armauthorization.PrincipalType
-	RoleAssignmentCreateParameters *armauthorization.RoleAssignmentCreateParameters
-	RoleAssignmentName             string
-	RoleName                       string
-	Scope                          string
+type ScopeConfiguration struct {
+	Active   []*Schedule `yaml:"active"`
+	Eligible []*Schedule `yaml:"eligible"`
 }
 
-type RoleAssignmentDelete struct {
-	PrincipalName    string
-	PrincipalType    armauthorization.PrincipalType
-	RoleAssignmentID string
-	RoleName         string
-	Scope            string
+type Schedule struct {
+	EndDateTime   *time.Time `yaml:"endDateTime"`
+	PrincipalName string
+	RoleName      string `yaml:"roleName" validate:"required"`
+	Scope         string
+	StartDateTime *time.Time `yaml:"startDateTime"`
+}
+
+type RulesetReference struct {
+	RoleName    string
+	RulesetName string `yaml:"rulesetName" validate:"required"`
+	Scope       string
+}
+
+type Policy struct {
+	Name           string
+	Subscription   []*RulesetReference            `yaml:"subscription"`
+	ResourceGroups map[string][]*RulesetReference `yaml:"resourceGroups"`
+	Resources      map[string][]*RulesetReference `yaml:"resources"`
+}
+
+type ScopeRoleNameCombination struct {
+	RoleName string
+	Scope    string
+}
+
+type RoleAssignmentScheduleCreate struct {
+	EndDateTime                       *time.Time
+	PrincipalName                     string
+	PrincipalType                     armauthorization.PrincipalType
+	RoleAssignmentScheduleRequest     *armauthorization.RoleAssignmentScheduleRequest
+	RoleAssignmentScheduleRequestName string
+	RoleName                          string
+	Scope                             string
+	StartDateTime                     *time.Time
+}
+
+type RoleAssignmentScheduleDelete struct {
+	Cancel                            bool
+	EndDateTime                       *time.Time
+	PrincipalName                     string
+	PrincipalType                     armauthorization.PrincipalType
+	RoleAssignmentScheduleRequest     *armauthorization.RoleAssignmentScheduleRequest
+	RoleAssignmentScheduleRequestName string
+	RoleName                          string
+	Scope                             string
+	StartDateTime                     *time.Time
+}
+
+type RoleAssignmentScheduleUpdate struct {
+	EndDateTime                       *time.Time
+	PrincipalName                     string
+	PrincipalType                     armauthorization.PrincipalType
+	RoleAssignmentScheduleRequest     *armauthorization.RoleAssignmentScheduleRequest
+	RoleAssignmentScheduleRequestName string
+	RoleName                          string
+	Scope                             string
+	StartDateTime                     *time.Time
 }
 
 type RoleEligibilityScheduleCreate struct {
@@ -97,12 +120,12 @@ type RoleEligibilityScheduleUpdate struct {
 }
 
 type RoleManagementPolicyRule struct {
-	ID    string      `yaml:"id"`
-	Patch interface{} `yaml:"patch"`
+	ID    string      `yaml:"id" validate:"required"`
+	Patch interface{} `yaml:"patch" validate:"required"`
 }
 
 type RoleManagementPolicyRuleset struct {
-	Name  string                      `yaml:"name"`
+	Name  string
 	Rules []*RoleManagementPolicyRule `yaml:"rules"`
 }
 

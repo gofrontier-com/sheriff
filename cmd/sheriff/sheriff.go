@@ -20,7 +20,6 @@ func main() {
 	output.PrintlnInfo()
 	command := sheriff.NewRootCmd(version, commit, date)
 	if err := command.Execute(); err != nil {
-		output.PrintlnError(err)
 		os.Exit(1)
 	}
 }

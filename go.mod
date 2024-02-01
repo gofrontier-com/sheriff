@@ -6,8 +6,9 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2 v2.2.0
+	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
-	github.com/evanphx/json-patch/v5 v5.7.0
+	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/go-test/deep v1.1.0
 	github.com/gofrontier-com/go-utils v0.1.0
@@ -16,7 +17,6 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/cobra v1.6.1
 	go.hein.dev/go-version v0.1.0
-	golang.org/x/exp v0.0.0-20231127185646-65229373498e
 	gopkg.in/yaml.v2 v2.4.0
 )
 
