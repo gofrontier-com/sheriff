@@ -384,8 +384,50 @@ Groups
 
 *Coming soon...*
 
+--------------
+Authentication
+--------------
+
+Sheriff uses the ``DefaultAzureCredential`` type from the
+`Azure SDK for Go <https://github.com/Azure/azure-sdk-for-go>`_,
+which simplifies authentication by enabling the use of different
+authentication methods at runtime based on a defined precedence.
+
+In order of priority, Sheriff will attempt to authenticate using:
+
+#. `Environment variables <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#environment-variables>`_
+#. `Workload identity <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#workload-identity>`_
+#. `Managed identity <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#managed-identity>`_
+#. `Azure CLI context <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#azureCLI>`_
+
+See `Azure authentication with the Azure Identity module for Go <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication>`_ for more information.
+
+~~~~~~~~~~~
+Permissions
+~~~~~~~~~~~
+
+The authenticated principal requires the role(s):
+
+.. list-table::
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Function
+     - Role
+     - Scope
+   * - ``plan azurerm``
+     - | ``Reader``
+       |
+       | (or any role that permits the ``*/Read`` or ``Microsoft.Authorization/*/read`` actions)
+     - ``/subscriptions/<subscription ID>``
+   * - ``apply azurerm``
+     - | ``User Access Administrator``
+       |
+       | (or any role that permits the ``*`` or ``Microsoft.Authorization/*`` actions)
+     - ``/subscriptions/<subscription ID>``
+
 ------------
 Contributing
 ------------
 
-We welcome contributions to this repository. Please see `CONTRIBUTING.md <https://github.com/gofrontier-com/azurerm-terraform-modules/tree/main/CONTRIBUTING.md>`_ for more information.
+We welcome contributions to this repository. Please see `CONTRIBUTING.md <https://github.com/gofrontier-com/sheriff/tree/main/CONTRIBUTING.md>`_ for more information.

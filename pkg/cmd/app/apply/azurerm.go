@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/go-test/deep"
 	"github.com/gofrontier-com/go-utils/output"
 	"github.com/gofrontier-com/sheriff/pkg/core"
@@ -28,6 +29,17 @@ import (
 
 //go:embed default_role_management_policy.json
 var defaultRoleManagementPolicyPropertiesData string
+
+var (
+	requiredActionsToApply = []string{
+		"*",
+		"Microsoft.Authorization/*",
+	}
+	requiredActionsToPlan = []string{
+		"*/read",
+		"Microsoft.Authorization/*/read",
+	}
+)
 
 func init() {
 	deep.NilSlicesAreEmpty = true
@@ -75,7 +87,16 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	output.PrintlnInfo("- Checking for necessary permissions\n")
 
-	checkPermissions(clientFactory, graphServiceClient, scope)
+	var requiredActions []string
+	if planOnly {
+		requiredActions = requiredActionsToPlan
+	} else {
+		requiredActions = requiredActionsToApply
+	}
+	err = checkPermissions(clientFactory, graphServiceClient, scope, requiredActions)
+	if err != nil {
+		return err
+	}
 
 	if len(warnings) > 0 {
 		output.PrintlnWarn("!!! One or more warnings were generated !!!")
@@ -453,6 +474,7 @@ func checkPermissions(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
+	requiredActions []string,
 ) error {
 	me, err := graphServiceClient.Me().Get(context.Background(), nil)
 	if err != nil {
@@ -461,7 +483,7 @@ func checkPermissions(
 
 	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 
-	hasRoleAssignmentsWritePermission := false
+	hasRequiredActions := false
 	roleAssignmentsClientListForScopeOptions := &armauthorization.RoleAssignmentsClientListForScopeOptions{
 		Filter: to.Ptr(fmt.Sprintf("assignedTo('%s')", *me.GetId())),
 	}
@@ -482,23 +504,21 @@ func checkPermissions(
 				return err
 			}
 
-			for _, p := range roleDefinition.Properties.Permissions {
-				for _, a := range p.Actions {
-					if *a == "*" {
-						hasRoleAssignmentsWritePermission = true
-						break
-					}
-					if *a == "Microsoft.Authorization/roleAssignments/write" {
-						hasRoleAssignmentsWritePermission = true
-						break
-					}
-				}
+			thisHasRequiredActions := linq.From(roleDefinition.Properties.Permissions).SelectManyT(func(p *armauthorization.Permission) linq.Query {
+				return linq.From(p.Actions)
+			}).AnyWithT(func(a *string) bool {
+				return linq.From(requiredActions).Contains(*a)
+			})
+
+			if thisHasRequiredActions {
+				hasRequiredActions = true
+				break
 			}
 		}
 	}
 
-	if !hasRoleAssignmentsWritePermission {
-		return fmt.Errorf("user does not have permission to create role assignments") // TODO: Update
+	if !hasRequiredActions {
+		return fmt.Errorf("authenticated principal does not have the required permissions for this action")
 	}
 
 	return nil
