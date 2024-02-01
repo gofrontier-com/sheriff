@@ -15,7 +15,7 @@ Sheriff
 =======
 
 Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
-and **Microsoft Entra ID Privileged Identity Management (Microsoft Entra ID PIM)** using desired state configuration.
+and **Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)** using desired state configuration.
 
 .. contents:: Table of Contents
     :local:
@@ -28,7 +28,7 @@ About
 Sheriff
 ~~~~~~~
 
-Sheriff has been built to enable the management of Azure RBAC and Microsoft Entra ID PIM configuration
+Sheriff has been built to enable the management of Azure RBAC and Microsoft Entra PIM configuration
 via YAML/JSON files. Although some of its functionality overlaps with the AzureRM provider
 for Terraform, the Terraform implementation lacks coverage for some key features required
 to operate PIM effectively, including role management policies.
@@ -49,16 +49,16 @@ Azure resources, what they can do with those resources, and what areas they have
 
 See `What is Azure role-based access control (Azure RBAC)? <https://learn.microsoft.com/en-us/azure/role-based-access-control/overview>`_ for more information.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Microsoft Entra ID Privileged Identity Management (Microsoft Entra ID PIM)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Microsoft Entra ID Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
+Microsoft Entra Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
 enables you to manage, control, and monitor access to important resources in your organization.
 These resources include resources in Microsoft Entra ID, Azure, and other Microsoft Online Services
 such as Microsoft 365 or Microsoft Intune.
 
-See `What is Microsoft Entra ID Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
+See `What is Microsoft Entra Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
 
 --------
 Download
@@ -136,7 +136,7 @@ Configuration of role management policies is managed via YAML files per role.
 Role configuration files reference one or more rulesets at the required scopes.
 
 !!!Important!!! Please note that role management policies are **not** inherited from parent scopes.
-This is by design in Microsoft Entra ID PIM and cannot be changed. Overriding the
+This is by design in Microsoft Entra PIM and cannot be changed. Overriding the
 default role management policy for a given role at a particular scope must be done
 by referencing one or more rulesets at that exact scope.
 
@@ -331,7 +331,7 @@ Usage
 .. code:: bash
 
   $ sheriff --help
-  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra ID Privileged Identity Management (PIM) configuration declaratively
+  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Privileged Identity Management (PIM) configuration declaratively
 
   Usage:
     sheriff
