@@ -4,7 +4,7 @@
 
 ### Breaking changes
 
-* Restructured the input data format for Azure RM mode.
+* Restructured the config data format for Azure RM mode.
 
 ### Bug fixes
 
