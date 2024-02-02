@@ -15,7 +15,7 @@ Sheriff
 =======
 
 Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
-and **Microsoft Entra ID Privileged Identity Management (Microsoft Entra ID PIM)** using desired state configuration.
+and **Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)** using desired state configuration.
 
 .. contents:: Table of Contents
     :local:
@@ -28,7 +28,7 @@ About
 Sheriff
 ~~~~~~~
 
-Sheriff has been built to enable the management of Azure RBAC and Microsoft Entra ID PIM configuration
+Sheriff has been built to enable the management of Azure RBAC and Microsoft Entra PIM configuration
 via YAML/JSON files. Although some of its functionality overlaps with the AzureRM provider
 for Terraform, the Terraform implementation lacks coverage for some key features required
 to operate PIM effectively, including role management policies.
@@ -49,16 +49,16 @@ Azure resources, what they can do with those resources, and what areas they have
 
 See `What is Azure role-based access control (Azure RBAC)? <https://learn.microsoft.com/en-us/azure/role-based-access-control/overview>`_ for more information.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Microsoft Entra ID Privileged Identity Management (Microsoft Entra ID PIM)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Microsoft Entra ID Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
+Microsoft Entra Privileged Identity Management (PIM) is a service in Microsoft Entra ID that
 enables you to manage, control, and monitor access to important resources in your organization.
 These resources include resources in Microsoft Entra ID, Azure, and other Microsoft Online Services
 such as Microsoft 365 or Microsoft Intune.
 
-See `What is Microsoft Entra ID Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
+See `What is Microsoft Entra Privileged Identity Management? <https://learn.microsoft.com/en-gb/entra/id-governance/privileged-identity-management/pim-configure?WT.mc_id=Portal-Microsoft_Azure_PIMCommon>`_ for more information.
 
 --------
 Download
@@ -135,10 +135,11 @@ in which both active and eligible role assignments are defined.
 Configuration of role management policies is managed via YAML files per role.
 Role configuration files reference one or more rulesets at the required scopes.
 
-!!!Important!!! Please note that role management policies are **not** inherited from parent scopes.
-This is by design in Microsoft Entra ID PIM and cannot be changed. Overriding the
-default role management policy for a given role at a particular scope must be done
-by referencing one or more rulesets at that exact scope.
+.. note::
+  Please note that role management policies are **not** inherited from parent scopes.
+  This is by design in Microsoft Entra PIM and cannot be changed. Overriding the
+  default role management policy for a given role at a particular scope must be done
+  by referencing one or more rulesets at that exact scope.
 
 ``policies/<role name>.yml``
 
@@ -331,7 +332,7 @@ Usage
 .. code:: bash
 
   $ sheriff --help
-  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra ID Privileged Identity Management (PIM) configuration declaratively
+  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Privileged Identity Management (PIM) configuration declaratively
 
   Usage:
     sheriff
@@ -384,8 +385,50 @@ Groups
 
 *Coming soon...*
 
+--------------
+Authentication
+--------------
+
+Sheriff uses the ``DefaultAzureCredential`` type from the
+`Azure SDK for Go <https://github.com/Azure/azure-sdk-for-go>`_,
+which simplifies authentication by enabling the use of different
+authentication methods at runtime based on a defined precedence.
+
+In order of priority, Sheriff will attempt to authenticate using:
+
+#. `Environment variables <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#environment-variables>`_
+#. `Workload identity <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#workload-identity>`_
+#. `Managed identity <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#managed-identity>`_
+#. `Azure CLI context <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#azureCLI>`_
+
+See `Azure authentication with the Azure Identity module for Go <https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication>`_ for more information.
+
+~~~~~~~~~~~
+Permissions
+~~~~~~~~~~~
+
+The authenticated principal requires the role(s):
+
+.. list-table::
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Function
+     - Role
+     - Scope
+   * - ``plan azurerm``
+     - | ``Reader``
+       |
+       | (or any role that permits the ``*/Read`` or ``Microsoft.Authorization/*/read`` actions)
+     - ``/subscriptions/<subscription ID>``
+   * - ``apply azurerm``
+     - | ``User Access Administrator``
+       |
+       | (or any role that permits the ``*`` or ``Microsoft.Authorization/*`` actions)
+     - ``/subscriptions/<subscription ID>``
+
 ------------
 Contributing
 ------------
 
-We welcome contributions to this repository. Please see `CONTRIBUTING.md <https://github.com/gofrontier-com/azurerm-terraform-modules/tree/main/CONTRIBUTING.md>`_ for more information.
+We welcome contributions to this repository. Please see `CONTRIBUTING.md <https://github.com/gofrontier-com/sheriff/tree/main/CONTRIBUTING.md>`_ for more information.
