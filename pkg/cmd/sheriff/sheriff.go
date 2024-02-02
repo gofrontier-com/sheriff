@@ -12,7 +12,7 @@ func NewRootCmd(version string, commit string, date string) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:                   "sheriff",
 		DisableFlagsInUseLine: true,
-		Short:                 "Sheriff is a command line tool to manage Azure role-based access control (Azure RBAC) and Microsoft Entra Priviliged Identity Management (Microsoft Entra PIM) using desired state configuration",
+		Short:                 "Sheriff is a command line tool to manage Azure role-based access control (Azure RBAC) and Microsoft Entra Privileged Identity Management (Microsoft Entra PIM) using desired state configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := cmd.Help(); err != nil {
 				return err
