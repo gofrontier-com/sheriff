@@ -77,20 +77,6 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 		return err
 	}
 
-	accessToken, err := credential.GetToken(context.Background(), policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
-	if err != nil {
-		return err
-	}
-
-	token, err := jwt.Parse(accessToken.Token, nil)
-	if err != nil {
-		if err.Error() != "token is unverifiable: no keyfunc was provided" {
-			return err
-		}
-	}
-
-	subject := token.Claims.(jwt.MapClaims)["oid"].(string)
-
 	clientFactory, err := armauthorization.NewClientFactory(subscriptionId, credential, nil)
 	if err != nil {
 		return err
@@ -109,7 +95,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 	} else {
 		requiredActions = requiredActionsToApply
 	}
-	err = checkPermissions(clientFactory, subject, scope, requiredActions)
+	err = checkPermissions(clientFactory, credential, scope, requiredActions)
 	if err != nil {
 		return err
 	}
@@ -488,10 +474,24 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 func checkPermissions(
 	clientFactory *armauthorization.ClientFactory,
-	principalId string,
+	credential *azidentity.DefaultAzureCredential,
 	scope string,
 	requiredActions []string,
 ) error {
+	accessToken, err := credential.GetToken(context.Background(), policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
+	if err != nil {
+		return err
+	}
+
+	token, err := jwt.Parse(accessToken.Token, nil)
+	if err != nil {
+		if err.Error() != "token is unverifiable: no keyfunc was provided" {
+			return err
+		}
+	}
+
+	principalId := token.Claims.(jwt.MapClaims)["oid"].(string)
+
 	roleAssignmentsClient := clientFactory.NewRoleAssignmentsClient()
 
 	hasRequiredActions := false
