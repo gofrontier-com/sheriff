@@ -19,6 +19,14 @@ func (c *AzureRmConfig) GetRulesetReferences(subscriptionId string) []*RulesetRe
 	rulesetReferences := []*RulesetReference{}
 
 	for _, p := range c.Policies {
+		if p.Default != nil {
+			for _, r := range p.Default {
+				r.RoleName = p.Name
+				r.Scope = "default"
+				rulesetReferences = append(rulesetReferences, r)
+			}
+		}
+
 		if p.Subscription != nil {
 			for _, r := range p.Subscription {
 				r.RoleName = p.Name

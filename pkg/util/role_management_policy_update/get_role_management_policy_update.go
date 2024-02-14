@@ -51,6 +51,24 @@ func GetRoleManagementPolicyUpdates(
 			return g.Key.(core.ScopeRoleNameCombination).RoleName == c.RoleName && g.Key.(core.ScopeRoleNameCombination).Scope == c.Scope
 		})
 
+		if thisRulesetReferenceGroup == nil {
+			thisRulesetReferenceGroup = linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
+				return g.Key.(core.ScopeRoleNameCombination).RoleName == c.RoleName && g.Key.(core.ScopeRoleNameCombination).Scope == "default"
+			})
+		}
+
+		if thisRulesetReferenceGroup == nil {
+			thisRulesetReferenceGroup = linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
+				return g.Key.(core.ScopeRoleNameCombination).RoleName == "default" && g.Key.(core.ScopeRoleNameCombination).Scope == c.Scope
+			})
+		}
+
+		if thisRulesetReferenceGroup == nil {
+			thisRulesetReferenceGroup = linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
+				return g.Key.(core.ScopeRoleNameCombination).RoleName == "default" && g.Key.(core.ScopeRoleNameCombination).Scope == "default"
+			})
+		}
+
 		var thisRoleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
 		if thisRulesetReferenceGroup != nil {
 			rulesetNames := thisRulesetReferenceGroup.(linq.Group).Group
