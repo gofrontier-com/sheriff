@@ -15,54 +15,22 @@ func (c *AzureRmConfig) GetGroupEligibilitySchedules(subscriptionId string) []*S
 	return getEligibilitySchedules(c.Groups, subscriptionId)
 }
 
-func (c *AzureRmConfig) GetRulesetReferences(subscriptionId string) []*RulesetReference {
-	rulesetReferences := []*RulesetReference{}
+func (c *AzureRmConfig) GetPolicyByRoleName(roleName string) *Policy {
+	policy := linq.From(c.Policies).SingleWithT(func(p *Policy) bool {
+		return p.Name == roleName
+	})
 
-	for _, p := range c.Policies {
-		if p.Default != nil {
-			for _, r := range p.Default {
-				r.RoleName = p.Name
-				r.Scope = "default"
-				rulesetReferences = append(rulesetReferences, r)
-			}
-		}
-
-		if p.Subscription != nil {
-			for _, r := range p.Subscription {
-				r.RoleName = p.Name
-				r.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
-				rulesetReferences = append(rulesetReferences, r)
-			}
-		}
-
-		resourceGroupNames := make([]string, 0, len(p.ResourceGroups))
-		for k := range p.ResourceGroups {
-			resourceGroupNames = append(resourceGroupNames, k)
-		}
-
-		for _, r := range resourceGroupNames {
-			for _, s := range p.ResourceGroups[r] {
-				s.RoleName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
-				rulesetReferences = append(rulesetReferences, s)
-			}
-		}
-
-		resourceNames := make([]string, 0, len(p.Resources))
-		for k := range p.Resources {
-			resourceNames = append(resourceNames, k)
-		}
-
-		for _, r := range resourceNames {
-			for _, s := range p.Resources[r] {
-				s.RoleName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
-				rulesetReferences = append(rulesetReferences, s)
-			}
-		}
+	if policy == nil {
+		policy = linq.From(c.Policies).SingleWithT(func(p *Policy) bool {
+			return p.Name == "default"
+		})
 	}
 
-	return rulesetReferences
+	if p, ok := policy.(*Policy); ok {
+		return p
+	} else {
+		return nil
+	}
 }
 
 func (c *AzureRmConfig) GetScopeRoleNameCombinations(subscriptionId string) []*ScopeRoleNameCombination {
@@ -112,7 +80,17 @@ func (c *AzureRmConfig) Validate() error {
 func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
 	azureRmConfig := sl.Current().Interface().(AzureRmConfig)
 
-	rulesetReferences := azureRmConfig.GetRulesetReferences("00000000-0000-0000-0000-000000000000")
+	var rulesetReferences []*RulesetReference
+	for _, p := range azureRmConfig.Policies {
+		rulesetReferences = append(rulesetReferences, p.Global...)
+		rulesetReferences = append(rulesetReferences, p.Subscription...)
+		for _, r := range p.ResourceGroups {
+			rulesetReferences = append(rulesetReferences, r...)
+		}
+		for _, r := range p.Resources {
+			rulesetReferences = append(rulesetReferences, r...)
+		}
+	}
 
 	for _, r := range rulesetReferences {
 		any := linq.From(azureRmConfig.Rulesets).WhereT(func(s *RoleManagementPolicyRuleset) bool {

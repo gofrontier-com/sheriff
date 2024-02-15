@@ -19,21 +19,12 @@ import (
 func GetRoleManagementPolicyUpdates(
 	clientFactory *armauthorization.ClientFactory,
 	defaultRoleManagementPolicyPropertiesData string,
-	scopeRoleNameCombinations []*core.ScopeRoleNameCombination,
-	rulesetReferences []*core.RulesetReference,
-	roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset,
+	config *core.AzureRmConfig,
+	subscriptionId string,
 ) ([]*core.RoleManagementPolicyUpdate, error) {
 	var roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate
 
-	var rulesetReferenceGroups []linq.Group
-	linq.From(rulesetReferences).GroupByT(func(r *core.RulesetReference) core.ScopeRoleNameCombination {
-		return core.ScopeRoleNameCombination{
-			RoleName: r.RoleName,
-			Scope:    r.Scope,
-		}
-	}, func(s *core.RulesetReference) string {
-		return s.RulesetName
-	}).ToSlice(&rulesetReferenceGroups)
+	scopeRoleNameCombinations := config.GetScopeRoleNameCombinations(subscriptionId)
 
 	for _, c := range scopeRoleNameCombinations {
 		var desiredRoleManagementPolicyProperties armauthorization.RoleManagementPolicyProperties
@@ -47,43 +38,29 @@ func GetRoleManagementPolicyUpdates(
 			role_management_policy_classification_rule.SortByID,
 		)
 
-		thisRulesetReferenceGroup := linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
-			return g.Key.(core.ScopeRoleNameCombination).RoleName == c.RoleName && g.Key.(core.ScopeRoleNameCombination).Scope == c.Scope
-		})
+		policy := config.GetPolicyByRoleName(c.RoleName)
 
-		if thisRulesetReferenceGroup == nil {
-			thisRulesetReferenceGroup = linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
-				return g.Key.(core.ScopeRoleNameCombination).RoleName == c.RoleName && g.Key.(core.ScopeRoleNameCombination).Scope == "default"
-			})
-		}
+		var roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
+		if policy != nil {
+			roleManagementPolicyRulesetReferences := policy.GetRulesetReferencesForScope(c.Scope, subscriptionId)
 
-		if thisRulesetReferenceGroup == nil {
-			thisRulesetReferenceGroup = linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
-				return g.Key.(core.ScopeRoleNameCombination).RoleName == "default" && g.Key.(core.ScopeRoleNameCombination).Scope == c.Scope
-			})
-		}
+			var rulesetNames []string
+			linq.From(roleManagementPolicyRulesetReferences).SelectT(func(r *core.RulesetReference) string {
+				return r.RulesetName
+			}).ToSlice(&rulesetNames)
 
-		if thisRulesetReferenceGroup == nil {
-			thisRulesetReferenceGroup = linq.From(rulesetReferenceGroups).SingleWithT(func(g linq.Group) bool {
-				return g.Key.(core.ScopeRoleNameCombination).RoleName == "default" && g.Key.(core.ScopeRoleNameCombination).Scope == "default"
-			})
-		}
-
-		var thisRoleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
-		if thisRulesetReferenceGroup != nil {
-			rulesetNames := thisRulesetReferenceGroup.(linq.Group).Group
-			linq.From(roleManagementPolicyRulesets).WhereT(func(s *core.RoleManagementPolicyRuleset) bool {
+			linq.From(config.Rulesets).WhereT(func(s *core.RoleManagementPolicyRuleset) bool {
 				return linq.From(rulesetNames).Contains(s.Name)
-			}).ToSlice(&thisRoleManagementPolicyRulesets)
+			}).ToSlice(&roleManagementPolicyRulesets)
 
-			if len(thisRoleManagementPolicyRulesets) != len(rulesetNames) {
+			if len(roleManagementPolicyRulesets) != len(rulesetNames) {
 				panic("ruleset count does not match ruleset reference count")
 			}
 		} else {
-			thisRoleManagementPolicyRulesets = []*core.RoleManagementPolicyRuleset{}
+			roleManagementPolicyRulesets = []*core.RoleManagementPolicyRuleset{}
 		}
 
-		for _, roleManagementPolicyRuleset := range thisRoleManagementPolicyRulesets {
+		for _, roleManagementPolicyRuleset := range roleManagementPolicyRulesets {
 			for _, rule := range roleManagementPolicyRuleset.Rules {
 				if rule.Patch == nil {
 					continue

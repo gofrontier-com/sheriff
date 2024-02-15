@@ -34,13 +34,11 @@ type Schedule struct {
 }
 
 type RulesetReference struct {
-	RoleName    string
 	RulesetName string `yaml:"rulesetName" validate:"required"`
-	Scope       string
 }
 
 type Policy struct {
-	Default        []*RulesetReference `yaml:"default"`
+	Global         []*RulesetReference `yaml:"global"`
 	Name           string
 	Subscription   []*RulesetReference            `yaml:"subscription"`
 	ResourceGroups map[string][]*RulesetReference `yaml:"resourceGroups"`

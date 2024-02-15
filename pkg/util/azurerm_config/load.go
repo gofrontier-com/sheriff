@@ -41,6 +41,10 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 	}
 
 	for _, e := range entries {
+		if filepath.Ext(e.Name()) != ".yml" && filepath.Ext(e.Name()) != ".yaml" {
+			continue
+		}
+
 		filePath := filepath.Join(patchesDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
@@ -84,6 +88,10 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 			continue
 		}
 
+		if filepath.Ext(e.Name()) != ".yml" && filepath.Ext(e.Name()) != ".yaml" {
+			continue
+		}
+
 		filePath := filepath.Join(policiesDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
@@ -120,6 +128,10 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	}
 
 	for _, e := range entries {
+		if filepath.Ext(e.Name()) != ".yml" && filepath.Ext(e.Name()) != ".yaml" {
+			continue
+		}
+
 		filePath := filepath.Join(principalsDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
