@@ -58,6 +58,10 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 			return nil, err
 		}
 
+		if roleManagementPolicyRuleset.Rules == nil {
+			continue
+		}
+
 		roleManagementPolicyRuleset.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
 
 		for _, r := range roleManagementPolicyRuleset.Rules {
@@ -105,6 +109,13 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 			return nil, err
 		}
 
+		if policy.Global == nil &&
+			policy.Subscription == nil &&
+			policy.ResourceGroups == nil &&
+			policy.Resources == nil {
+			continue
+		}
+
 		policy.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
 
 		policies = append(policies, &policy)
@@ -143,6 +154,12 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 		err = yaml.Unmarshal(yamlFile, &principal)
 		if err != nil {
 			return nil, err
+		}
+
+		if principal.Subscription == nil &&
+			principal.ResourceGroups == nil &&
+			principal.Resources == nil {
+			continue
 		}
 
 		principal.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
