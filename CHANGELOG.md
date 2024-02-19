@@ -1,5 +1,11 @@
 # Sheriff Changelog
 
+## 0.2.0
+
+### New features
+
+* Added support for role management policy defaults.
+
 ## 0.1.0
 
 ### Breaking changes
