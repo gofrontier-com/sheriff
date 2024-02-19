@@ -29,6 +29,10 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
+const (
+	dateFormat = "Mon, 02 Jan 2006 15:04:05 MST"
+)
+
 //go:embed default_role_management_policy.json
 var defaultRoleManagementPolicyPropertiesData string
 
@@ -252,16 +256,11 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 	output.PrintlnInfo("- Role management policies\n")
 
-	scopeRoleNameCombinations := config.GetScopeRoleNameCombinations(subscriptionId)
-
-	rulesetReferences := config.GetRulesetReferences(subscriptionId)
-
 	roleManagementPolicyUpdates, err := role_management_policy_update.GetRoleManagementPolicyUpdates(
 		clientFactory,
 		defaultRoleManagementPolicyPropertiesData,
-		scopeRoleNameCombinations,
-		rulesetReferences,
-		config.Rulesets,
+		config,
+		subscriptionId,
 	)
 	if err != nil {
 		return err
@@ -556,8 +555,11 @@ func printPlan(
 				builder.WriteString(fmt.Sprintf("    + %s: %s\n", c.PrincipalType, c.PrincipalName))
 				builder.WriteString(fmt.Sprintf("      Role:  %s\n", c.RoleName))
 				builder.WriteString(fmt.Sprintf("      Scope: %s\n", c.Scope))
-				builder.WriteString(fmt.Sprintf("      Start: %s\n", c.StartDateTime))
-				builder.WriteString(fmt.Sprintf("      End:   %s\n\n", c.EndDateTime))
+				builder.WriteString(fmt.Sprintf("      Start: %s\n", c.StartDateTime.Format(dateFormat)))
+				if c.EndDateTime != nil {
+					builder.WriteString(fmt.Sprintf("      End:   %s\n", c.EndDateTime.Format(dateFormat)))
+				}
+				builder.WriteString("\n")
 			}
 		}
 
@@ -567,8 +569,11 @@ func printPlan(
 				builder.WriteString(fmt.Sprintf("    + %s: %s\n", c.PrincipalType, c.PrincipalName))
 				builder.WriteString(fmt.Sprintf("      Role:  %s\n", c.RoleName))
 				builder.WriteString(fmt.Sprintf("      Scope: %s\n", c.Scope))
-				builder.WriteString(fmt.Sprintf("      Start: %s\n", c.StartDateTime))
-				builder.WriteString(fmt.Sprintf("      End:   %s\n\n", c.EndDateTime))
+				builder.WriteString(fmt.Sprintf("      Start: %s\n", c.StartDateTime.Format(dateFormat)))
+				if c.EndDateTime != nil {
+					builder.WriteString(fmt.Sprintf("      End:   %s\n", c.EndDateTime.Format(dateFormat)))
+				}
+				builder.WriteString("\n")
 			}
 		}
 
@@ -578,8 +583,11 @@ func printPlan(
 				builder.WriteString(fmt.Sprintf("    ~ %s: %s\n", u.PrincipalType, u.PrincipalName))
 				builder.WriteString(fmt.Sprintf("      Role:  %s\n", u.RoleName))
 				builder.WriteString(fmt.Sprintf("      Scope: %s\n", u.Scope))
-				builder.WriteString(fmt.Sprintf("      Start: %s\n", u.StartDateTime))
-				builder.WriteString(fmt.Sprintf("      End:   %s\n\n", u.EndDateTime))
+				builder.WriteString(fmt.Sprintf("      Start: %s\n", u.StartDateTime.Format(dateFormat)))
+				if u.EndDateTime != nil {
+					builder.WriteString(fmt.Sprintf("      End:   %s\n", u.EndDateTime.Format(dateFormat)))
+				}
+				builder.WriteString("\n")
 			}
 		}
 
@@ -589,8 +597,11 @@ func printPlan(
 				builder.WriteString(fmt.Sprintf("    ~ %s: %s\n", u.PrincipalType, u.PrincipalName))
 				builder.WriteString(fmt.Sprintf("      Role:  %s\n", u.RoleName))
 				builder.WriteString(fmt.Sprintf("      Scope: %s\n", u.Scope))
-				builder.WriteString(fmt.Sprintf("      Start: %s\n", u.StartDateTime))
-				builder.WriteString(fmt.Sprintf("      End:   %s\n\n", u.EndDateTime))
+				builder.WriteString(fmt.Sprintf("      Start: %s\n", u.StartDateTime.Format(dateFormat)))
+				if u.EndDateTime != nil {
+					builder.WriteString(fmt.Sprintf("      End:   %s\n", u.EndDateTime.Format(dateFormat)))
+				}
+				builder.WriteString("\n")
 			}
 		}
 
@@ -608,8 +619,11 @@ func printPlan(
 				builder.WriteString(fmt.Sprintf("    - %s: %s\n", d.PrincipalType, d.PrincipalName))
 				builder.WriteString(fmt.Sprintf("      Role:  %s\n", d.RoleName))
 				builder.WriteString(fmt.Sprintf("      Scope: %s\n", d.Scope))
-				builder.WriteString(fmt.Sprintf("      Start: %s\n", d.StartDateTime))
-				builder.WriteString(fmt.Sprintf("      End:   %s\n\n", d.EndDateTime))
+				builder.WriteString(fmt.Sprintf("      Start: %s\n", d.StartDateTime.Format(dateFormat)))
+				if d.EndDateTime != nil {
+					builder.WriteString(fmt.Sprintf("      End:   %s\n", d.EndDateTime.Format(dateFormat)))
+				}
+				builder.WriteString("\n")
 			}
 		}
 
@@ -619,8 +633,11 @@ func printPlan(
 				builder.WriteString(fmt.Sprintf("    - %s: %s\n", d.PrincipalType, d.PrincipalName))
 				builder.WriteString(fmt.Sprintf("      Role:  %s\n", d.RoleName))
 				builder.WriteString(fmt.Sprintf("      Scope: %s\n", d.Scope))
-				builder.WriteString(fmt.Sprintf("      Start: %s\n", d.StartDateTime))
-				builder.WriteString(fmt.Sprintf("      End:   %s\n\n", d.EndDateTime))
+				builder.WriteString(fmt.Sprintf("      Start: %s\n", d.StartDateTime.Format(dateFormat)))
+				if d.EndDateTime != nil {
+					builder.WriteString(fmt.Sprintf("      End:   %s\n", d.EndDateTime.Format(dateFormat)))
+				}
+				builder.WriteString("\n")
 			}
 		}
 	}

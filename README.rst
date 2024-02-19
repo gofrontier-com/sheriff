@@ -134,18 +134,23 @@ in which both active and eligible role assignments are defined.
 
 Configuration of role management policies is managed via YAML files per role.
 Role configuration files reference one or more rulesets at the required scopes.
+Rulesets referenced under ``default`` will apply to all scopes unless overridden
+by a ruleset at an exact scope.
 
 .. note::
   Please note that role management policies are **not** inherited from parent scopes.
   This is by design in Microsoft Entra PIM and cannot be changed. Overriding the
   default role management policy for a given role at a particular scope must be done
-  by referencing one or more rulesets at that exact scope.
+  by referencing one or more rulesets either at the exact scope required, or as ``default``.
 
 ``policies/<role name>.yml``
 
 .. code:: yaml
 
   ---
+  default:
+    - rulesetName: <ruleset name>
+    ...
   subscription:
     - rulesetName: <ruleset name>
     ...
@@ -184,8 +189,34 @@ Rules (and partial rules) defined in rulesets override those in the
 
 See `Rules in PIM - mapping guide <https://learn.microsoft.com/en-us/graph/identity-governance-pim-rules-overview>`_ for more information.
 
+It is possible in Sheriff to define a default role configuration using a ``policies/default.yml`` file.
+This, in combination with the ``default`` feature in Sheriff, provides a mechanism to apply a default
+configuration for all roles at all scopes, for example:
+
+``policies/default.yml``
+
+.. code:: yaml
+
+  ---
+  default:
+    - rulesetName: <ruleset name>
+    ...
+
+
 Examples
 ~~~~~~~~
+
+Active assignment for group at any scope
+----------------------------------------
+
+``groups/Engineers.yml``
+
+.. code:: yaml
+
+  ---
+  default:
+    active:
+      - roleName: Reader
 
 Active assignment for group at subscription scope
 -------------------------------------------------
@@ -225,15 +256,15 @@ Active assignment for user at resource scope
       active:
         - roleName: Network Contributor
 
-Eligible assignment for group at subscription scope
----------------------------------------------------
+Eligible assignment for group at any scope
+------------------------------------------
 
 ``groups/SRE.yml``
 
 .. code:: yaml
 
   ---
-  subscription:
+  default:
     eligible:
       - roleName: Disk Restore Operator
         endDateTime: 2024-12-31T00:00:00Z

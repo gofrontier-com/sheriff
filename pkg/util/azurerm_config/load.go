@@ -41,6 +41,10 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 	}
 
 	for _, e := range entries {
+		if filepath.Ext(e.Name()) != ".yml" && filepath.Ext(e.Name()) != ".yaml" {
+			continue
+		}
+
 		filePath := filepath.Join(patchesDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
@@ -52,6 +56,10 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 		err = yaml.Unmarshal(yamlFile, &roleManagementPolicyRuleset)
 		if err != nil {
 			return nil, err
+		}
+
+		if roleManagementPolicyRuleset.Rules == nil {
+			continue
 		}
 
 		roleManagementPolicyRuleset.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
@@ -84,6 +92,10 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 			continue
 		}
 
+		if filepath.Ext(e.Name()) != ".yml" && filepath.Ext(e.Name()) != ".yaml" {
+			continue
+		}
+
 		filePath := filepath.Join(policiesDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
@@ -95,6 +107,13 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 		err = yaml.Unmarshal(yamlFile, &policy)
 		if err != nil {
 			return nil, err
+		}
+
+		if policy.Default == nil &&
+			policy.Subscription == nil &&
+			policy.ResourceGroups == nil &&
+			policy.Resources == nil {
+			continue
 		}
 
 		policy.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
@@ -120,6 +139,10 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 	}
 
 	for _, e := range entries {
+		if filepath.Ext(e.Name()) != ".yml" && filepath.Ext(e.Name()) != ".yaml" {
+			continue
+		}
+
 		filePath := filepath.Join(principalsDirPath, e.Name())
 		yamlFile, err := os.ReadFile(filePath)
 		if err != nil {
@@ -131,6 +154,12 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 		err = yaml.Unmarshal(yamlFile, &principal)
 		if err != nil {
 			return nil, err
+		}
+
+		if principal.Subscription == nil &&
+			principal.ResourceGroups == nil &&
+			principal.Resources == nil {
+			continue
 		}
 
 		principal.Name = strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
