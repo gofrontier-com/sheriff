@@ -16,21 +16,21 @@ func (p *Policy) GetRulesetReferencesForScope(scope string, subscriptionId strin
 		if p.Subscription != nil {
 			return p.Subscription
 		} else {
-			return p.Global
+			return p.Default
 		}
 	} else if resourceGroupRegex.MatchString(scope) {
 		groups := resourceGroupRegex.FindStringSubmatch(scope)
 		if p.ResourceGroups[groups[1]] != nil {
 			return p.ResourceGroups[groups[1]]
 		} else {
-			return p.Global
+			return p.Default
 		}
 	} else if resourceRegex.MatchString(scope) {
 		groups := resourceRegex.FindStringSubmatch(scope)
 		if p.Resources[groups[1]] != nil {
 			return p.Resources[groups[1]]
 		} else {
-			return p.Global
+			return p.Default
 		}
 	}
 

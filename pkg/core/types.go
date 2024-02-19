@@ -38,7 +38,7 @@ type RulesetReference struct {
 }
 
 type Policy struct {
-	Global         []*RulesetReference `yaml:"global"`
+	Default        []*RulesetReference `yaml:"default"`
 	Name           string
 	Subscription   []*RulesetReference            `yaml:"subscription"`
 	ResourceGroups map[string][]*RulesetReference `yaml:"resourceGroups"`

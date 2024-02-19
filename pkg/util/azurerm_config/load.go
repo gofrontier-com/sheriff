@@ -109,7 +109,7 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 			return nil, err
 		}
 
-		if policy.Global == nil &&
+		if policy.Default == nil &&
 			policy.Subscription == nil &&
 			policy.ResourceGroups == nil &&
 			policy.Resources == nil {

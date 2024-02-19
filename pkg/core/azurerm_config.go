@@ -82,7 +82,7 @@ func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
 
 	var rulesetReferences []*RulesetReference
 	for _, p := range azureRmConfig.Policies {
-		rulesetReferences = append(rulesetReferences, p.Global...)
+		rulesetReferences = append(rulesetReferences, p.Default...)
 		rulesetReferences = append(rulesetReferences, p.Subscription...)
 		for _, r := range p.ResourceGroups {
 			rulesetReferences = append(rulesetReferences, r...)
