@@ -164,7 +164,7 @@ by a ruleset at an exact scope.
       ...
 
 Rules (and partial rules) defined in rulesets override those in the
-`default role management policy <https://github.com/gofrontier-com/azurerm-terraform-modules/tree/main/pkg/cmd/app/apply/default_role_management_policy.json>`_.
+`default role management policy <https://github.com/gofrontier-com/sheriff/tree/main/pkg/cmd/app/apply/default_role_management_policy.json>`_.
 
 ``policies/rulesets/<ruleset name>.yml``
 
