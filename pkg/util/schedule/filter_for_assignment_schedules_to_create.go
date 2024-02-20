@@ -26,7 +26,6 @@ func FilterForAssignmentSchedulesToCreate(
 		any := linq.From(existingRoleAssignmentSchedules).WhereT(func(s *armauthorization.RoleAssignmentSchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {

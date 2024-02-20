@@ -28,7 +28,6 @@ func FilterForEligibilitySchedulesToUpdate(
 		idx := slices.IndexFunc(existingRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {
@@ -50,7 +49,6 @@ func FilterForEligibilitySchedulesToUpdate(
 		idx2 := linq.From(existingRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {
