@@ -15,6 +15,7 @@ import (
 	"github.com/gofrontier-com/go-utils/output"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/azurerm_config"
+	"github.com/gofrontier-com/sheriff/pkg/util/group"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule_create"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule_delete"
@@ -25,6 +26,7 @@ import (
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_delete"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_update"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_management_policy_update"
+	"github.com/gofrontier-com/sheriff/pkg/util/user"
 	"github.com/golang-jwt/jwt/v5"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
@@ -42,7 +44,9 @@ var (
 		"Microsoft.Authorization/*",
 	}
 	requiredActionsToPlan = []string{
+		"*",
 		"*/read",
+		"Microsoft.Authorization/*",
 		"Microsoft.Authorization/*/read",
 	}
 )
@@ -99,7 +103,7 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 	} else {
 		requiredActions = requiredActionsToApply
 	}
-	err = checkPermissions(clientFactory, credential, scope, requiredActions)
+	err = checkPermissions(clientFactory, graphServiceClient, credential, scope, requiredActions)
 	if err != nil {
 		return err
 	}
@@ -473,10 +477,13 @@ func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error 
 
 func checkPermissions(
 	clientFactory *armauthorization.ClientFactory,
+	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	credential *azidentity.DefaultAzureCredential,
 	scope string,
 	requiredActions []string,
 ) error {
+	errors := []string{}
+
 	accessToken, err := credential.GetToken(context.Background(), policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
 	if err != nil {
 		return err
@@ -528,7 +535,27 @@ func checkPermissions(
 	}
 
 	if !hasRequiredActions {
-		return fmt.Errorf("authenticated principal does not have the required permissions for this action")
+		errors = append(errors, fmt.Sprintf("at least one of the following azurerm actions are required at scope %s: %s", scope, strings.Join(requiredActions, ", ")))
+	}
+
+	_, err = user.GetUserByUpn(graphServiceClient, "foo@bar.com")
+	if err != nil {
+		message := err.Error()
+		if message == "Insufficient privileges to complete the operation." {
+			errors = append(errors, "at least one of the following microsoft graph permissions are required: User.ReadBasic.All, User.Read.All, Directory.Read.All")
+		}
+	}
+
+	_, err = group.GetGroupByName(graphServiceClient, "foo bar")
+	if err != nil {
+		message := err.Error()
+		if message == "Insufficient privileges to complete the operation." {
+			errors = append(errors, "at least one of the following microsoft graph permissions are required: GroupMember.Read.All, Group.Read.All, Directory.Read.All")
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("authenticated principal failed the permissions check with the following error(s):\n- %s", strings.Join(errors, "\n- "))
 	}
 
 	return nil

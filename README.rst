@@ -164,7 +164,7 @@ by a ruleset at an exact scope.
       ...
 
 Rules (and partial rules) defined in rulesets override those in the
-`default role management policy <https://github.com/gofrontier-com/azurerm-terraform-modules/tree/main/pkg/cmd/app/apply/default_role_management_policy.json>`_.
+`default role management policy <https://github.com/gofrontier-com/sheriff/tree/main/pkg/cmd/app/apply/default_role_management_policy.json>`_.
 
 ``policies/rulesets/<ruleset name>.yml``
 
@@ -438,7 +438,10 @@ See `Azure authentication with the Azure Identity module for Go <https://learn.m
 Permissions
 ~~~~~~~~~~~
 
-The authenticated principal requires the role(s):
+Azure Resource Manager
+~~~~~~~~~~~~~~~~~~~~~~
+
+The authenticated principal requires the following AzureRM role(s):
 
 .. list-table::
    :widths: 25 25 50
@@ -457,6 +460,31 @@ The authenticated principal requires the role(s):
        |
        | (or any role that permits the ``*`` or ``Microsoft.Authorization/*`` actions)
      - ``/subscriptions/<subscription ID>``
+
+Microsoft Graph
+~~~~~~~~~~~~~~~
+
+The authenticated principal requires the following Microsoft Graph permissions:
+
+.. list-table::
+   :widths: 25 50
+   :header-rows: 1
+
+   * - Function
+     - Permissions
+   * - | ``plan azurerm``
+       | ``apply azurerm``
+     - | To manage users, at least one of:
+       |
+       | ``User.ReadBasic.All`` (least privileged option)
+       | ``User.Read.All``
+       | ``Directory.Read.All`` (most privileged option)
+       |
+       | To manage groups, at least one of:
+       |
+       | ``GroupMember.Read.All`` (least privileged option)
+       | ``Group.Read.All``
+       | ``Directory.Read.All`` (most privileged option)
 
 ------------
 Contributing
