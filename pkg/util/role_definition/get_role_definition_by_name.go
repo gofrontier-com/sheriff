@@ -11,7 +11,7 @@ import (
 
 func GetRoleDefinitionByName(clientFactory *armauthorization.ClientFactory, scope string, roleDefinitionName string) (*armauthorization.RoleDefinition, error) {
 	var roleDefinition *armauthorization.RoleDefinition
-	cacheKey := fmt.Sprintf("scoped-name::%s_%s", scope, roleDefinitionName)
+	cacheKey := fmt.Sprintf("scoped-name::%s:%s", scope, roleDefinitionName)
 
 	if d, found := cache.Get(cacheKey); found {
 		roleDefinition = d.(*armauthorization.RoleDefinition)
@@ -40,9 +40,15 @@ func GetRoleDefinitionByName(clientFactory *armauthorization.ClientFactory, scop
 			return nil, fmt.Errorf("multiple role definition with name \"%s\" found", roleDefinitionName)
 		}
 
-		cache.Set(cacheKey, roleDefinitions[0], gocache.NoExpiration)
-
 		roleDefinition = roleDefinitions[0]
+
+		cacheKeys := []string{
+			cacheKey,
+			fmt.Sprintf("id::%s", *roleDefinition.ID),
+		}
+		for _, cacheKey := range cacheKeys {
+			cache.Set(cacheKey, roleDefinition, gocache.NoExpiration)
+		}
 	}
 
 	return roleDefinition, nil

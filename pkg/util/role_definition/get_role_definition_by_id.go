@@ -3,14 +3,14 @@ package role_definition
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	gocache "github.com/patrickmn/go-cache"
 )
 
-// TODO: Retire scope param.
-func GetRoleDefinitionById(clientFactory *armauthorization.ClientFactory, scope string, roleDefinitionId string) (*armauthorization.RoleDefinition, error) {
+func GetRoleDefinitionById(clientFactory *armauthorization.ClientFactory, roleDefinitionId string) (*armauthorization.RoleDefinition, error) {
 	var roleDefinition *armauthorization.RoleDefinition
 	cacheKey := fmt.Sprintf("id::%s", roleDefinitionId)
 
@@ -32,9 +32,17 @@ func GetRoleDefinitionById(clientFactory *armauthorization.ClientFactory, scope 
 			}
 		}
 
-		cache.Set(cacheKey, &response.RoleDefinition, gocache.NoExpiration)
-
 		roleDefinition = &response.RoleDefinition
+
+		scope := strings.Split(*roleDefinition.ID, "/providers/Microsoft.Authorization/roleDefinitions/")[0]
+
+		cacheKeys := []string{
+			cacheKey,
+			fmt.Sprintf("scoped-name::%s:%s", scope, *roleDefinition.Properties.RoleName),
+		}
+		for _, cacheKey := range cacheKeys {
+			cache.Set(cacheKey, roleDefinition, gocache.NoExpiration)
+		}
 	}
 
 	return roleDefinition, nil
