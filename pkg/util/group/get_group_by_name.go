@@ -46,7 +46,7 @@ func GetGroupByName(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupNa
 			fmt.Sprintf("id::%s", *group.GetId()),
 		}
 		for _, cacheKey := range cacheKeys {
-			cache.Set(cacheKey, result, gocache.NoExpiration)
+			cache.Set(cacheKey, group, gocache.NoExpiration)
 		}
 	}
 
