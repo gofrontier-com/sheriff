@@ -10,15 +10,9 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 )
 
-var cache gocache.Cache
-
-func init() {
-	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
-}
-
 func GetGroupById(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupId string) (models.Groupable, error) {
 	var group models.Groupable
-	cacheKey := fmt.Sprintf("group_%s", groupId)
+	cacheKey := fmt.Sprintf("id::%s", groupId)
 
 	if g, found := cache.Get(cacheKey); found {
 		group = g.(models.Groupable)
@@ -32,9 +26,15 @@ func GetGroupById(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupId s
 			}
 		}
 
-		cache.Set(cacheKey, result, gocache.NoExpiration)
-
 		group = result
+
+		cacheKeys := []string{
+			cacheKey,
+			fmt.Sprintf("name::%s", *group.GetDisplayName()),
+		}
+		for _, cacheKey := range cacheKeys {
+			cache.Set(cacheKey, group, gocache.NoExpiration)
+		}
 	}
 
 	return group, nil

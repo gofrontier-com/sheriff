@@ -28,7 +28,6 @@ func FilterForAssignmentSchedulesToUpdate(
 		idx := slices.IndexFunc(existingRoleAssignmentSchedules, func(s *armauthorization.RoleAssignmentSchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {
@@ -50,7 +49,6 @@ func FilterForAssignmentSchedulesToUpdate(
 		idx2 := linq.From(existingRoleAssignmentSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*s.Properties.RoleDefinitionID,
 			)
 			if err != nil {

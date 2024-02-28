@@ -26,7 +26,6 @@ func FilterForRoleAssignmentSchedulesToDelete(
 		any := linq.From(assignmentSchedules).WhereT(func(a *core.Schedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*r.Properties.RoleDefinitionID,
 			)
 			if err != nil {

@@ -12,7 +12,7 @@ import (
 
 func GetGroupByName(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupName string) (models.Groupable, error) {
 	var group models.Groupable
-	cacheKey := fmt.Sprintf("group_%s", groupName)
+	cacheKey := fmt.Sprintf("name::%s", groupName)
 
 	if g, found := cache.Get(cacheKey); found {
 		group = g.(models.Groupable)
@@ -39,9 +39,15 @@ func GetGroupByName(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupNa
 			return nil, fmt.Errorf("multiple groups with display name \"%s\" found", groupName)
 		}
 
-		cache.Set(cacheKey, groups[0], gocache.NoExpiration)
-
 		group = groups[0]
+
+		cacheKeys := []string{
+			cacheKey,
+			fmt.Sprintf("id::%s", *group.GetId()),
+		}
+		for _, cacheKey := range cacheKeys {
+			cache.Set(cacheKey, result, gocache.NoExpiration)
+		}
 	}
 
 	return group, nil

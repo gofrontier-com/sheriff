@@ -38,7 +38,6 @@ func GetRoleAssignmentScheduleDeletes(
 	for _, s := range groupAssignmentSchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
-			scope,
 			*s.Properties.RoleDefinitionID,
 		)
 		if err != nil {
@@ -99,7 +98,6 @@ func GetRoleAssignmentScheduleDeletes(
 	for _, s := range userAssignmentSchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
-			scope,
 			*s.Properties.RoleDefinitionID,
 		)
 		if err != nil {
