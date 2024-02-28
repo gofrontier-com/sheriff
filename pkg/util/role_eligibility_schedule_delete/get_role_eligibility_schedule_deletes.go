@@ -38,7 +38,6 @@ func GetRoleEligibilityScheduleDeletes(
 	for _, s := range groupEligibilitySchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
-			scope,
 			*s.Properties.RoleDefinitionID,
 		)
 		if err != nil {
@@ -99,7 +98,6 @@ func GetRoleEligibilityScheduleDeletes(
 	for _, s := range userEligibilitySchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
-			scope,
 			*s.Properties.RoleDefinitionID,
 		)
 		if err != nil {

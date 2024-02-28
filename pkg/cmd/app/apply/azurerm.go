@@ -514,7 +514,6 @@ func checkPermissions(
 		for _, r := range page.Value {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
-				scope,
 				*r.Properties.RoleDefinitionID,
 			)
 			if err != nil {
