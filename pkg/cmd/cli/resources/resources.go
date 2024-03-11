@@ -14,7 +14,7 @@ var (
 )
 
 var (
-	aliases []string = []string{"azurerm"}
+	aliases []string = []string{"azurerm", "azure-resources"}
 	use     string   = "resources"
 )
 
