@@ -14,8 +14,7 @@
 Sheriff
 =======
 
-Sheriff is a command line tool to manage **Azure role-based access control (Azure RBAC)**
-and **Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)** using desired state configuration.
+Sheriff is a command line tool to manage **Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)** using desired state configuration.
 
 .. contents:: Table of Contents
     :local:
@@ -28,7 +27,7 @@ About
 Sheriff
 ~~~~~~~
 
-Sheriff has been built to enable the management of Azure RBAC and Microsoft Entra PIM configuration
+Sheriff has been built to enable the management of Microsoft Entra PIM configuration
 via YAML/JSON files. Although some of its functionality overlaps with the AzureRM provider
 for Terraform, the Terraform implementation lacks coverage for some key features required
 to operate PIM effectively, including role management policies.
@@ -39,15 +38,6 @@ of how that configuration was set. For example, if a user manually adds a role a
 present in the desired state YAML configuration, Sheriff will remove it.
 
 Sheriff is designed to be used as part of a CI/CD pipeline.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Azure role-based access control (Azure RBAC)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Azure role-based access control (Azure RBAC) helps you manage who has access to
-Azure resources, what they can do with those resources, and what areas they have access to.
-
-See `What is Azure role-based access control (Azure RBAC)? <https://learn.microsoft.com/en-us/azure/role-based-access-control/overview>`_ for more information.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Microsoft Entra Privileged Identity Management (Microsoft Entra PIM)
@@ -391,8 +381,8 @@ Plan
 
 .. code:: bash
 
-  $ sheriff plan azurerm \
-      --config-dir <path to AzureRM config> \
+  $ sheriff plan resources \
+      --config-dir <path to resources config> \
       --subscription-id <subscription ID>
 
 Apply
@@ -400,8 +390,8 @@ Apply
 
 .. code:: bash
 
-  $ sheriff apply azurerm \
-      --config-dir <path to AzureRM config> \
+  $ sheriff apply resources \
+      --config-dir <path to resources config> \
       --subscription-id <subscription ID>
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -450,12 +440,12 @@ The authenticated principal requires the following AzureRM role(s):
    * - Function
      - Role
      - Scope
-   * - ``plan azurerm``
+   * - ``plan resources``
      - | ``Reader``
        |
        | (or any role that permits the ``*/Read`` or ``Microsoft.Authorization/*/read`` actions)
      - ``/subscriptions/<subscription ID>``
-   * - ``apply azurerm``
+   * - ``apply resources``
      - | ``User Access Administrator``
        |
        | (or any role that permits the ``*`` or ``Microsoft.Authorization/*`` actions)
@@ -472,8 +462,8 @@ The authenticated principal requires the following Microsoft Graph permissions:
 
    * - Function
      - Permissions
-   * - | ``plan azurerm``
-       | ``apply azurerm``
+   * - | ``plan resources``
+       | ``apply resources``
      - | To manage users, at least one of:
        |
        | ``User.ReadBasic.All`` (least privileged option)
