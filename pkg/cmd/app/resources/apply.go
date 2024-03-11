@@ -1,4 +1,4 @@
-package apply
+package resources
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func init() {
 	deep.NilSlicesAreEmpty = true
 }
 
-func ApplyAzureRm(configDir string, subscriptionId string, planOnly bool) error {
+func ApplyResources(configDir string, subscriptionId string, planOnly bool) error {
 	scope := fmt.Sprintf("/subscriptions/%s", subscriptionId)
 
 	var warnings []string

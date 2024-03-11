@@ -1,11 +1,11 @@
-package validate
+package resources
 
 import (
 	"github.com/gofrontier-com/go-utils/output"
 	"github.com/gofrontier-com/sheriff/pkg/util/azurerm_config"
 )
 
-func ValidateAzureRm(configDir string) error {
+func ValidateResources(configDir string) error {
 	output.PrintlnInfo("Initialising...")
 
 	output.PrintlnInfo("- Loading and validating config\n")

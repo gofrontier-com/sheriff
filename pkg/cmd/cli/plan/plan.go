@@ -2,6 +2,8 @@ package plan
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/resources"
 )
 
 // NewCmdApply creates a command to plan changes
@@ -11,7 +13,7 @@ func NewCmdPlan() *cobra.Command {
 		Short: "Plan changes",
 	}
 
-	cmd.AddCommand(NewCmdPlanAzureRm())
+	cmd.AddCommand(resources.NewCmdPlanResources())
 
 	return cmd
 }
