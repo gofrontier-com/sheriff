@@ -9,8 +9,6 @@ import (
 
 // NewCmdPlanResources creates a command to plan the Azure Resources config changes
 func NewCmdPlanResources() *cobra.Command {
-	planOnly = true
-
 	cmd := &cobra.Command{
 		Use:     use,
 		Aliases: aliases,
