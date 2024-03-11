@@ -1,4 +1,4 @@
-package azurerm_config
+package resources_config
 
 import (
 	"fmt"
@@ -237,7 +237,7 @@ func validateDirStructure(configDirPath string) []error {
 	return errors
 }
 
-func Load(configDirPath string) (*core.AzureRmConfig, error) {
+func Load(configDirPath string) (*core.ResourcesConfig, error) {
 	errors := validateDirStructure(configDirPath)
 	if len(errors) > 0 {
 		return nil, fmt.Errorf("invalid config dir structure: %v", errors)
@@ -263,7 +263,7 @@ func Load(configDirPath string) (*core.AzureRmConfig, error) {
 		return nil, err
 	}
 
-	configurationData := core.AzureRmConfig{
+	configurationData := core.ResourcesConfig{
 		Groups:   groups,
 		Policies: policies,
 		Rulesets: roleManagementPolicyRulesets,

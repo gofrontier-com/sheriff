@@ -2,7 +2,7 @@ package resources
 
 import (
 	"github.com/gofrontier-com/go-utils/output"
-	"github.com/gofrontier-com/sheriff/pkg/util/azurerm_config"
+	"github.com/gofrontier-com/sheriff/pkg/util/resources_config"
 )
 
 func ValidateResources(configDir string) error {
@@ -10,7 +10,7 @@ func ValidateResources(configDir string) error {
 
 	output.PrintlnInfo("- Loading and validating config\n")
 
-	config, err := azurerm_config.Load(configDir)
+	config, err := resources_config.Load(configDir)
 	if err != nil {
 		return err
 	}

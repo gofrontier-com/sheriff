@@ -7,15 +7,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func (c *AzureRmConfig) GetGroupAssignmentSchedules(subscriptionId string) []*Schedule {
+func (c *ResourcesConfig) GetGroupAssignmentSchedules(subscriptionId string) []*Schedule {
 	return getAssignmentSchedules(c.Groups, subscriptionId)
 }
 
-func (c *AzureRmConfig) GetGroupEligibilitySchedules(subscriptionId string) []*Schedule {
+func (c *ResourcesConfig) GetGroupEligibilitySchedules(subscriptionId string) []*Schedule {
 	return getEligibilitySchedules(c.Groups, subscriptionId)
 }
 
-func (c *AzureRmConfig) GetPolicyByRoleName(roleName string) *Policy {
+func (c *ResourcesConfig) GetPolicyByRoleName(roleName string) *Policy {
 	policy := linq.From(c.Policies).SingleWithT(func(p *Policy) bool {
 		return p.Name == roleName
 	})
@@ -33,7 +33,7 @@ func (c *AzureRmConfig) GetPolicyByRoleName(roleName string) *Policy {
 	}
 }
 
-func (c *AzureRmConfig) GetScopeRoleNameCombinations(subscriptionId string) []*ScopeRoleNameCombination {
+func (c *ResourcesConfig) GetScopeRoleNameCombinations(subscriptionId string) []*ScopeRoleNameCombination {
 	groupAssignmentSchedules := c.GetGroupAssignmentSchedules(subscriptionId)
 	userAssignmentSchedules := c.GetUserAssignmentSchedules(subscriptionId)
 	groupEligibilitySchedules := c.GetGroupEligibilitySchedules(subscriptionId)
@@ -56,17 +56,17 @@ func (c *AzureRmConfig) GetScopeRoleNameCombinations(subscriptionId string) []*S
 	return scopeRoleNameCombinations
 }
 
-func (c *AzureRmConfig) GetUserAssignmentSchedules(subscriptionId string) []*Schedule {
+func (c *ResourcesConfig) GetUserAssignmentSchedules(subscriptionId string) []*Schedule {
 	return getAssignmentSchedules(c.Users, subscriptionId)
 }
 
-func (c *AzureRmConfig) GetUserEligibilitySchedules(subscriptionId string) []*Schedule {
+func (c *ResourcesConfig) GetUserEligibilitySchedules(subscriptionId string) []*Schedule {
 	return getEligibilitySchedules(c.Users, subscriptionId)
 }
 
-func (c *AzureRmConfig) Validate() error {
+func (c *ResourcesConfig) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
-	validate.RegisterStructValidation(AzureRmConfigStructLevelValidation, AzureRmConfig{})
+	validate.RegisterStructValidation(ResourcesConfigStructLevelValidation, ResourcesConfig{})
 	validate.RegisterStructValidation(ScopeConfigurationStructLevelValidation, ScopeConfiguration{})
 
 	err := validate.Struct(c)
@@ -77,11 +77,11 @@ func (c *AzureRmConfig) Validate() error {
 	return nil
 }
 
-func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
-	azureRmConfig := sl.Current().Interface().(AzureRmConfig)
+func ResourcesConfigStructLevelValidation(sl validator.StructLevel) {
+	ResourcesConfig := sl.Current().Interface().(ResourcesConfig)
 
 	var rulesetReferences []*RulesetReference
-	for _, p := range azureRmConfig.Policies {
+	for _, p := range ResourcesConfig.Policies {
 		rulesetReferences = append(rulesetReferences, p.Default...)
 		rulesetReferences = append(rulesetReferences, p.Subscription...)
 		for _, r := range p.ResourceGroups {
@@ -93,7 +93,7 @@ func AzureRmConfigStructLevelValidation(sl validator.StructLevel) {
 	}
 
 	for _, r := range rulesetReferences {
-		any := linq.From(azureRmConfig.Rulesets).WhereT(func(s *RoleManagementPolicyRuleset) bool {
+		any := linq.From(ResourcesConfig.Rulesets).WhereT(func(s *RoleManagementPolicyRuleset) bool {
 			return s.Name == r.RulesetName
 		}).Any()
 		if !any {

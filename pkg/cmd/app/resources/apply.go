@@ -14,8 +14,8 @@ import (
 	"github.com/go-test/deep"
 	"github.com/gofrontier-com/go-utils/output"
 	"github.com/gofrontier-com/sheriff/pkg/core"
-	"github.com/gofrontier-com/sheriff/pkg/util/azurerm_config"
 	"github.com/gofrontier-com/sheriff/pkg/util/group"
+	"github.com/gofrontier-com/sheriff/pkg/util/resources_config"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule_create"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule_delete"
@@ -64,7 +64,7 @@ func ApplyResources(configDir string, subscriptionId string, planOnly bool) erro
 
 	output.PrintlnInfo("- Loading and validating config")
 
-	config, err := azurerm_config.Load(configDir)
+	config, err := resources_config.Load(configDir)
 	if err != nil {
 		if _, ok := err.(*core.ConfigurationEmptyError); ok {
 			warnings = append(warnings, "Configuration is empty, is the config path correct?")
