@@ -3,7 +3,6 @@ package apply
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/groups"
 	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/resources"
 )
 
@@ -14,7 +13,6 @@ func NewCmdApply() *cobra.Command {
 		Short: "Apply config",
 	}
 
-	cmd.AddCommand(groups.NewCmdApplyGroups())
 	cmd.AddCommand(resources.NewCmdApplyResources())
 
 	return cmd
