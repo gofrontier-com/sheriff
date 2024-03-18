@@ -2,6 +2,8 @@ package validate
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/gofrontier-com/sheriff/pkg/cmd/cli/resources"
 )
 
 // NewCmdValidate creates a command to validate config
@@ -11,7 +13,7 @@ func NewCmdValidate() *cobra.Command {
 		Short: "Validate config",
 	}
 
-	cmd.AddCommand(NewCmdValidateAzureRm())
+	cmd.AddCommand(resources.NewCmdValidateResources())
 
 	return cmd
 }

@@ -19,7 +19,7 @@ import (
 func GetRoleManagementPolicyUpdates(
 	clientFactory *armauthorization.ClientFactory,
 	defaultRoleManagementPolicyPropertiesData string,
-	config *core.AzureRmConfig,
+	config *core.ResourcesConfig,
 	subscriptionId string,
 ) ([]*core.RoleManagementPolicyUpdate, error) {
 	var roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate

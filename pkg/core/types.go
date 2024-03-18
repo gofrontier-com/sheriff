@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 )
 
-type AzureRmConfig struct {
+type ResourcesConfig struct {
 	Groups   []*Principal                   `validate:"dive"`
 	Policies []*Policy                      `validate:"dive"`
 	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
