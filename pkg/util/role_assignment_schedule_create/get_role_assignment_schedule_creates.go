@@ -37,7 +37,11 @@ func GetRoleAssignmentScheduleCreates(
 	}
 
 	for _, a := range groupAssignmentSchedulesToCreate {
-		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, scope, a.RoleName)
+		roleDefinition, err := role_definition.GetRoleDefinitionByName(
+			clientFactory,
+			scope,
+			a.RoleName,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +85,11 @@ func GetRoleAssignmentScheduleCreates(
 	}
 
 	for _, a := range userAssignmentSchedulesToCreate {
-		roleDefinition, err := role_definition.GetRoleDefinitionByName(clientFactory, scope, a.RoleName)
+		roleDefinition, err := role_definition.GetRoleDefinitionByName(
+			clientFactory,
+			scope,
+			a.RoleName,
+		)
 		if err != nil {
 			return nil, err
 		}

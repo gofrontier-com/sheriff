@@ -2,7 +2,6 @@ package role_eligibility_schedule_update
 
 import (
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -56,19 +55,11 @@ func GetRoleEligibilityScheduleUpdates(
 			return nil, err
 		}
 
-		existingGroupRoleEligibilityScheduleIdx := slices.IndexFunc(existingGroupRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
+		existingGroupRoleEligibilityScheduleIdx := linq.From(existingGroupRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
 			return *s.Properties.Scope == a.Scope &&
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *group.GetId()
 		})
-		existingGroupRoleEligibilityScheduleIdx2 := linq.From(existingGroupRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
-				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
-				*s.Properties.PrincipalID == *group.GetId()
-		})
-		if existingGroupRoleEligibilityScheduleIdx != existingGroupRoleEligibilityScheduleIdx2 {
-			panic("index mismatch")
-		}
 		if existingGroupRoleEligibilityScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role eligibility schedule not found")
 		}
@@ -130,19 +121,11 @@ func GetRoleEligibilityScheduleUpdates(
 			return nil, err
 		}
 
-		existingUserRoleEligibilityScheduleIdx := slices.IndexFunc(existingUserRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
+		existingUserRoleEligibilityScheduleIdx := linq.From(existingUserRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
 			return *s.Properties.Scope == a.Scope &&
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *user.GetId()
 		})
-		existingUserRoleEligibilityScheduleIdx2 := linq.From(existingUserRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
-				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
-				*s.Properties.PrincipalID == *user.GetId()
-		})
-		if existingUserRoleEligibilityScheduleIdx != existingUserRoleEligibilityScheduleIdx2 {
-			panic("index mismatch")
-		}
 		if existingUserRoleEligibilityScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role eligibility schedule not found")
 		}

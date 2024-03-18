@@ -71,15 +71,9 @@ func GetRoleManagementPolicyUpdates(
 					return nil, err
 				}
 
-				ruleIndex := slices.IndexFunc(desiredRoleManagementPolicyProperties.Rules, func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
+				ruleIndex := linq.From(desiredRoleManagementPolicyProperties.Rules).IndexOfT(func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
 					return *s.GetRoleManagementPolicyRule().ID == rule.ID
 				})
-				ruleIndex2 := linq.From(desiredRoleManagementPolicyProperties.Rules).IndexOfT(func(s armauthorization.RoleManagementPolicyRuleClassification) bool {
-					return *s.GetRoleManagementPolicyRule().ID == rule.ID
-				})
-				if ruleIndex != ruleIndex2 {
-					panic("index mismatch")
-				}
 				if ruleIndex == -1 {
 					return nil, fmt.Errorf("rule with Id '%s' not found", rule.ID)
 				}
