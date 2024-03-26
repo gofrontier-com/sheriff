@@ -8,7 +8,16 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/identitygovernance"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	gocache "github.com/patrickmn/go-cache"
 )
+
+var cache gocache.Cache
+
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+// TODO: Cache.
 
 func GetGroupAssignmentSchedules(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupIds []string, filter func(*msgraphsdkgo.GraphServiceClient, models.PrivilegedAccessGroupAssignmentScheduleable) bool) ([]models.PrivilegedAccessGroupAssignmentScheduleable, error) {
 	var groupAssignmentSchedules []models.PrivilegedAccessGroupAssignmentScheduleable

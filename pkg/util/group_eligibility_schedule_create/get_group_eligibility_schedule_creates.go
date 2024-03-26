@@ -1,4 +1,4 @@
-package group_assignment_schedule_create
+package group_eligibility_schedule_create
 
 import (
 	"fmt"
@@ -14,16 +14,16 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func GetGroupAssignmentScheduleCreates(
+func GetGroupEligibilityScheduleCreates(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	groupSchedules []*core.Schedule,
-	existingGroupSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
+	existingGroupSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
 	userSchedules []*core.Schedule,
-	existingUserSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
-) ([]*core.GroupAssignmentScheduleCreate, error) {
-	var groupAssignmentScheduleCreates []*core.GroupAssignmentScheduleCreate
+	existingUserSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
+) ([]*core.GroupEligibilityScheduleCreate, error) {
+	var groupEligibilityScheduleCreates []*core.GroupEligibilityScheduleCreate
 
-	groupSchedulesToCreate, err := schedule.FilterForGroupAssignmentSchedulesToCreate(
+	groupSchedulesToCreate, err := schedule.FilterForGroupEligibilitySchedulesToCreate(
 		graphServiceClient,
 		groupSchedules,
 		existingGroupSchedules,
@@ -56,7 +56,7 @@ func GetGroupAssignmentScheduleCreates(
 
 		scheduleInfo := schedule_info.GetGroupScheduleInfo(a.StartDateTime, a.EndDateTime)
 
-		scheduleRequest := models.NewPrivilegedAccessGroupAssignmentScheduleRequest()
+		scheduleRequest := models.NewPrivilegedAccessGroupEligibilityScheduleRequest()
 		scheduleRequest.SetAccessId(&accessId)
 		scheduleRequest.SetAction(to.Ptr(models.ADMINASSIGN_SCHEDULEREQUESTACTIONS))
 		scheduleRequest.SetGroupId(managedGroup.GetId())
@@ -64,18 +64,18 @@ func GetGroupAssignmentScheduleCreates(
 		scheduleRequest.SetPrincipalId(group.GetId())
 		scheduleRequest.SetScheduleInfo(scheduleInfo)
 
-		groupAssignmentScheduleCreates = append(groupAssignmentScheduleCreates, &core.GroupAssignmentScheduleCreate{
-			EndDateTime:                    scheduleInfo.GetExpiration().GetEndDateTime(),
-			ManagedGroupName:               a.Target,
-			PrincipalName:                  *group.GetDisplayName(),
-			PrincipalType:                  armauthorization.PrincipalTypeGroup,
-			GroupAssignmentScheduleRequest: scheduleRequest,
-			RoleName:                       a.RoleName,
-			StartDateTime:                  scheduleInfo.GetStartDateTime(),
+		groupEligibilityScheduleCreates = append(groupEligibilityScheduleCreates, &core.GroupEligibilityScheduleCreate{
+			EndDateTime:                     scheduleInfo.GetExpiration().GetEndDateTime(),
+			ManagedGroupName:                a.Target,
+			PrincipalName:                   *group.GetDisplayName(),
+			PrincipalType:                   armauthorization.PrincipalTypeGroup,
+			GroupEligibilityScheduleRequest: scheduleRequest,
+			RoleName:                        a.RoleName,
+			StartDateTime:                   scheduleInfo.GetStartDateTime(),
 		})
 	}
 
-	userSchedulesToCreate, err := schedule.FilterForGroupAssignmentSchedulesToCreate(
+	userSchedulesToCreate, err := schedule.FilterForGroupEligibilitySchedulesToCreate(
 		graphServiceClient,
 		userSchedules,
 		existingUserSchedules,
@@ -108,7 +108,7 @@ func GetGroupAssignmentScheduleCreates(
 
 		scheduleInfo := schedule_info.GetGroupScheduleInfo(a.StartDateTime, a.EndDateTime)
 
-		scheduleRequest := models.NewPrivilegedAccessGroupAssignmentScheduleRequest()
+		scheduleRequest := models.NewPrivilegedAccessGroupEligibilityScheduleRequest()
 		scheduleRequest.SetAccessId(&accessId)
 		scheduleRequest.SetAction(to.Ptr(models.ADMINASSIGN_SCHEDULEREQUESTACTIONS))
 		scheduleRequest.SetGroupId(managedGroup.GetId())
@@ -116,16 +116,16 @@ func GetGroupAssignmentScheduleCreates(
 		scheduleRequest.SetPrincipalId(user.GetId())
 		scheduleRequest.SetScheduleInfo(scheduleInfo)
 
-		groupAssignmentScheduleCreates = append(groupAssignmentScheduleCreates, &core.GroupAssignmentScheduleCreate{
-			EndDateTime:                    scheduleInfo.GetExpiration().GetEndDateTime(),
-			ManagedGroupName:               a.Target,
-			PrincipalName:                  *user.GetUserPrincipalName(),
-			PrincipalType:                  armauthorization.PrincipalTypeUser,
-			GroupAssignmentScheduleRequest: scheduleRequest,
-			RoleName:                       a.RoleName,
-			StartDateTime:                  scheduleInfo.GetStartDateTime(),
+		groupEligibilityScheduleCreates = append(groupEligibilityScheduleCreates, &core.GroupEligibilityScheduleCreate{
+			EndDateTime:                     scheduleInfo.GetExpiration().GetEndDateTime(),
+			ManagedGroupName:                a.Target,
+			PrincipalName:                   *user.GetUserPrincipalName(),
+			PrincipalType:                   armauthorization.PrincipalTypeUser,
+			GroupEligibilityScheduleRequest: scheduleRequest,
+			RoleName:                        a.RoleName,
+			StartDateTime:                   scheduleInfo.GetStartDateTime(),
 		})
 	}
 
-	return groupAssignmentScheduleCreates, nil
+	return groupEligibilityScheduleCreates, nil
 }

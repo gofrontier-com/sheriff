@@ -1,4 +1,4 @@
-package group_schedule
+package schedule
 
 import (
 	"fmt"
@@ -10,20 +10,20 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func FilterForAssignmentSchedulesToCreate(
+func FilterForGroupAssignmentSchedulesToCreate(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	assignmentSchedules []*core.GroupSchedule,
-	existingGroupAssignmentSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
+	schedules []*core.Schedule,
+	existingSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
 	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, string) (*string, error),
-) (filtered []*core.GroupSchedule, err error) {
+) (filtered []*core.Schedule, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
 			err = e
 		}
 	}()
 
-	linq.From(assignmentSchedules).WhereT(func(a *core.GroupSchedule) bool {
-		any := linq.From(existingGroupAssignmentSchedules).WhereT(func(s models.PrivilegedAccessGroupAssignmentScheduleable) bool {
+	linq.From(schedules).WhereT(func(a *core.Schedule) bool {
+		any := linq.From(existingSchedules).WhereT(func(s models.PrivilegedAccessGroupAssignmentScheduleable) bool {
 			accessId := s.GetAccessId()
 			var roleName string
 			switch *accessId {
@@ -48,7 +48,7 @@ func FilterForAssignmentSchedulesToCreate(
 				panic(err)
 			}
 
-			return a.ManagedGroupName == *group.GetDisplayName() &&
+			return a.Target == *group.GetDisplayName() &&
 				a.RoleName == roleName &&
 				a.PrincipalName == *principalName
 		}).Any()

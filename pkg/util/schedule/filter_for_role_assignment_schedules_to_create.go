@@ -8,12 +8,12 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
-func FilterForEligibilitySchedulesToCreate(
+func FilterForRoleAssignmentSchedulesToCreate(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	eligibilitySchedules []*core.Schedule,
-	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	schedules []*core.Schedule,
+	existingSchedules []*armauthorization.RoleAssignmentSchedule,
 	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, string) (*string, error),
 ) (filtered []*core.Schedule, err error) {
 	defer func() {
@@ -22,8 +22,8 @@ func FilterForEligibilitySchedulesToCreate(
 		}
 	}()
 
-	linq.From(eligibilitySchedules).WhereT(func(a *core.Schedule) bool {
-		any := linq.From(existingRoleEligibilitySchedules).WhereT(func(s *armauthorization.RoleEligibilitySchedule) bool {
+	linq.From(schedules).WhereT(func(a *core.Schedule) bool {
+		any := linq.From(existingSchedules).WhereT(func(s *armauthorization.RoleAssignmentSchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				*s.Properties.RoleDefinitionID,
@@ -40,7 +40,7 @@ func FilterForEligibilitySchedulesToCreate(
 				panic(err)
 			}
 
-			return a.Scope == *s.Properties.Scope &&
+			return a.Target == *s.Properties.Scope &&
 				a.RoleName == *roleDefinition.Properties.RoleName &&
 				a.PrincipalName == *principalName
 		}).Any()

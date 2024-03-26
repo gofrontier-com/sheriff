@@ -1,4 +1,4 @@
-package group_assignment_schedule
+package schedule
 
 import (
 	"fmt"
@@ -10,21 +10,21 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func FilterForAssignmentSchedulesToDelete(
+func FilterForGroupEligibilitySchedulesToCreate(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	existingGroupAssignmentSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
-	assignmentSchedules []*core.Schedule,
+	schedules []*core.Schedule,
+	existingSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
 	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, string) (*string, error),
-) (filtered []models.PrivilegedAccessGroupAssignmentScheduleable, err error) {
+) (filtered []*core.Schedule, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
 			err = e
 		}
 	}()
 
-	linq.From(existingGroupAssignmentSchedules).WhereT(func(r models.PrivilegedAccessGroupAssignmentScheduleable) bool {
-		any := linq.From(assignmentSchedules).WhereT(func(a *core.Schedule) bool {
-			accessId := r.GetAccessId()
+	linq.From(schedules).WhereT(func(a *core.Schedule) bool {
+		any := linq.From(existingSchedules).WhereT(func(s models.PrivilegedAccessGroupEligibilityScheduleable) bool {
+			accessId := s.GetAccessId()
 			var roleName string
 			switch *accessId {
 			case models.MEMBER_PRIVILEGEDACCESSGROUPRELATIONSHIPS:
@@ -37,20 +37,20 @@ func FilterForAssignmentSchedulesToDelete(
 
 			principalName, err := getPrincipalName(
 				graphServiceClient,
-				*r.GetPrincipalId(),
+				*s.GetPrincipalId(),
 			)
 			if err != nil {
 				panic(err)
 			}
 
-			group, err := group.GetGroupById(graphServiceClient, *r.GetGroupId())
+			group, err := group.GetGroupById(graphServiceClient, *s.GetGroupId())
 			if err != nil {
 				panic(err)
 			}
 
-			return *group.GetDisplayName() == a.Target &&
-				roleName == a.RoleName &&
-				*principalName == a.PrincipalName
+			return a.Target == *group.GetDisplayName() &&
+				a.RoleName == roleName &&
+				a.PrincipalName == *principalName
 		}).Any()
 
 		return !any

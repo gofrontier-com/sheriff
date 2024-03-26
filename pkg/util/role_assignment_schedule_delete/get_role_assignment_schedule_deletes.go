@@ -16,26 +16,26 @@ func GetRoleAssignmentScheduleDeletes(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	groupAssignmentSchedules []*core.Schedule,
-	existingGroupRoleAssignmentSchedules []*armauthorization.RoleAssignmentSchedule,
-	userAssignmentSchedules []*core.Schedule,
-	existingUserRoleAssignmentSchedules []*armauthorization.RoleAssignmentSchedule,
+	groupSchedules []*core.Schedule,
+	existingGroupSchedules []*armauthorization.RoleAssignmentSchedule,
+	userSchedules []*core.Schedule,
+	existingUserSchedules []*armauthorization.RoleAssignmentSchedule,
 ) ([]*core.RoleAssignmentScheduleDelete, error) {
 	var roleAssignmentScheduleDeletes []*core.RoleAssignmentScheduleDelete
 
-	groupAssignmentSchedulesToDelete, err := role_assignment_schedule.FilterForRoleAssignmentSchedulesToDelete(
+	groupSchedulesToDelete, err := role_assignment_schedule.FilterForRoleAssignmentSchedulesToDelete(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		existingGroupRoleAssignmentSchedules,
-		groupAssignmentSchedules,
+		existingGroupSchedules,
+		groupSchedules,
 		group.GetGroupDisplayNameById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, s := range groupAssignmentSchedulesToDelete {
+	for _, s := range groupSchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
 			*s.Properties.RoleDefinitionID,
@@ -83,19 +83,19 @@ func GetRoleAssignmentScheduleDeletes(
 		}
 	}
 
-	userAssignmentSchedulesToDelete, err := role_assignment_schedule.FilterForRoleAssignmentSchedulesToDelete(
+	userSchedulesToDelete, err := role_assignment_schedule.FilterForRoleAssignmentSchedulesToDelete(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		existingUserRoleAssignmentSchedules,
-		userAssignmentSchedules,
+		existingUserSchedules,
+		userSchedules,
 		user.GetUserUpnById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, s := range userAssignmentSchedulesToDelete {
+	for _, s := range userSchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
 			*s.Properties.RoleDefinitionID,

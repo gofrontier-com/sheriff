@@ -17,26 +17,26 @@ func GetRoleEligibilityScheduleCreates(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	groupEligibilitySchedules []*core.Schedule,
-	existingGroupRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
-	userEligibilitySchedules []*core.Schedule,
-	existingUserRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	groupSchedules []*core.Schedule,
+	existingGroupSchedules []*armauthorization.RoleEligibilitySchedule,
+	userSchedules []*core.Schedule,
+	existingUserSchedules []*armauthorization.RoleEligibilitySchedule,
 ) ([]*core.RoleEligibilityScheduleCreate, error) {
 	var roleEligibilityScheduleCreates []*core.RoleEligibilityScheduleCreate
 
-	groupEligibilitySchedulesToCreate, err := schedule.FilterForEligibilitySchedulesToCreate(
+	groupSchedulesToCreate, err := schedule.FilterForRoleEligibilitySchedulesToCreate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		groupEligibilitySchedules,
-		existingGroupRoleEligibilitySchedules,
+		groupSchedules,
+		existingGroupSchedules,
 		group.GetGroupDisplayNameById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range groupEligibilitySchedulesToCreate {
+	for _, a := range groupSchedulesToCreate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -67,24 +67,24 @@ func GetRoleEligibilityScheduleCreates(
 			},
 			RoleEligibilityScheduleRequestName: uuid.New().String(),
 			RoleName:                           *roleDefinition.Properties.RoleName,
-			Scope:                              a.Scope,
+			Scope:                              a.Target,
 			StartDateTime:                      scheduleInfo.StartDateTime,
 		})
 	}
 
-	userEligibilitySchedulesToCreate, err := schedule.FilterForEligibilitySchedulesToCreate(
+	userSchedulesToCreate, err := schedule.FilterForRoleEligibilitySchedulesToCreate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		userEligibilitySchedules,
-		existingUserRoleEligibilitySchedules,
+		userSchedules,
+		existingUserSchedules,
 		user.GetUserUpnById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range userEligibilitySchedulesToCreate {
+	for _, a := range userSchedulesToCreate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -115,7 +115,7 @@ func GetRoleEligibilityScheduleCreates(
 			},
 			RoleEligibilityScheduleRequestName: uuid.New().String(),
 			RoleName:                           *roleDefinition.Properties.RoleName,
-			Scope:                              a.Scope,
+			Scope:                              a.Target,
 			StartDateTime:                      scheduleInfo.StartDateTime,
 		})
 	}

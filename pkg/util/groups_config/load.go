@@ -1,7 +1,6 @@
-package resources_config
+package groups_config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,8 +73,8 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 	return roleManagementPolicyRulesets, err
 }
 
-func loadPolicies(policiesDirPath string) ([]*core.ResourcePolicy, error) {
-	var policies []*core.ResourcePolicy
+func loadPolicies(policiesDirPath string) ([]*core.GroupPolicy, error) {
+	var policies []*core.GroupPolicy
 
 	if _, err := os.Stat(policiesDirPath); err != nil {
 		if os.IsNotExist(err) {
@@ -102,7 +101,7 @@ func loadPolicies(policiesDirPath string) ([]*core.ResourcePolicy, error) {
 			return nil, err
 		}
 
-		var policy core.ResourcePolicy
+		var policy core.GroupPolicy
 
 		err = yaml.Unmarshal(yamlFile, &policy)
 		if err != nil {
@@ -110,9 +109,7 @@ func loadPolicies(policiesDirPath string) ([]*core.ResourcePolicy, error) {
 		}
 
 		if policy.Default == nil &&
-			policy.Subscription == nil &&
-			policy.ResourceGroups == nil &&
-			policy.Resources == nil {
+			policy.ManagedGroups == nil {
 			continue
 		}
 
@@ -124,8 +121,8 @@ func loadPolicies(policiesDirPath string) ([]*core.ResourcePolicy, error) {
 	return policies, nil
 }
 
-func loadPrincipals(principalsDirPath string) ([]*core.ResourcePrincipal, error) {
-	var principals []*core.ResourcePrincipal
+func loadPrincipals(principalsDirPath string) ([]*core.GroupPrincipal, error) {
+	var principals []*core.GroupPrincipal
 
 	if _, err := os.Stat(principalsDirPath); err != nil {
 		if os.IsNotExist(err) {
@@ -149,16 +146,14 @@ func loadPrincipals(principalsDirPath string) ([]*core.ResourcePrincipal, error)
 			return nil, err
 		}
 
-		var principal core.ResourcePrincipal
+		var principal core.GroupPrincipal
 
 		err = yaml.Unmarshal(yamlFile, &principal)
 		if err != nil {
 			return nil, err
 		}
 
-		if principal.Subscription == nil &&
-			principal.ResourceGroups == nil &&
-			principal.Resources == nil {
+		if principal.ManagedGroups == nil {
 			continue
 		}
 
@@ -170,78 +165,11 @@ func loadPrincipals(principalsDirPath string) ([]*core.ResourcePrincipal, error)
 	return principals, err
 }
 
-func validateDirStructure(configDirPath string) []error {
-	errors := []error{}
-
-	if _, err := os.Stat(configDirPath); err != nil {
-		if os.IsNotExist(err) {
-			return append(errors, fmt.Errorf("config dir path does not exist: %s", configDirPath))
-		}
-	}
-
-	entries, err := os.ReadDir(configDirPath)
-	if err != nil {
-		return append(errors, err)
-	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			errors = append(errors, fmt.Errorf("unexpected file in config dir: %s", e.Name()))
-			continue
-		}
-
-		if e.Name() == "groups" || e.Name() == "users" {
-			entries, err := os.ReadDir(filepath.Join(configDirPath, e.Name()))
-			if err != nil {
-				return append(errors, err)
-			}
-			for _, f := range entries {
-				if f.IsDir() {
-					errors = append(errors, fmt.Errorf("unexpected dir in %s: %s", e.Name(), f.Name()))
-				}
-			}
-
-			continue
-		}
-
-		if e.Name() == "policies" {
-			entries, err := os.ReadDir(filepath.Join(configDirPath, e.Name()))
-			if err != nil {
-				return append(errors, err)
-			}
-			for _, f := range entries {
-				if f.IsDir() {
-					if f.Name() == "rulesets" {
-						entries, err := os.ReadDir(filepath.Join(configDirPath, e.Name(), f.Name()))
-						if err != nil {
-							return append(errors, err)
-						}
-						for _, g := range entries {
-							if g.IsDir() {
-								errors = append(errors, fmt.Errorf("unexpected dir in %s: %s", f.Name(), g.Name()))
-							}
-						}
-
-						continue
-					}
-
-					errors = append(errors, fmt.Errorf("unexpected dir in %s: %s", e.Name(), f.Name()))
-				}
-			}
-
-			continue
-		}
-
-		errors = append(errors, fmt.Errorf("unexpected dir in config dir: %s", e.Name()))
-	}
-
-	return errors
-}
-
-func Load(configDirPath string) (*core.ResourcesConfig, error) {
-	errors := validateDirStructure(configDirPath)
-	if len(errors) > 0 {
-		return nil, fmt.Errorf("invalid config dir structure: %v", errors)
-	}
+func Load(configDirPath string) (*core.GroupsConfig, error) {
+	// errors := validateDirStructure(configDirPath)
+	// if len(errors) > 0 {
+	// 	return nil, fmt.Errorf("invalid config dir structure: %v", errors)
+	// }
 
 	groups, err := loadPrincipals(filepath.Join(configDirPath, "groups"))
 	if err != nil {
@@ -263,7 +191,7 @@ func Load(configDirPath string) (*core.ResourcesConfig, error) {
 		return nil, err
 	}
 
-	configurationData := core.ResourcesConfig{
+	configurationData := core.GroupsConfig{
 		Groups:   groups,
 		Policies: policies,
 		Rulesets: roleManagementPolicyRulesets,

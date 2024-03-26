@@ -1,4 +1,4 @@
-package group_assignment_schedule_delete
+package group_eligibility_schedule_delete
 
 import (
 	"fmt"
@@ -7,22 +7,22 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/group"
-	"github.com/gofrontier-com/sheriff/pkg/util/group_assignment_schedule"
+	"github.com/gofrontier-com/sheriff/pkg/util/group_eligibility_schedule"
 	"github.com/gofrontier-com/sheriff/pkg/util/user"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func GetGroupAssignmentScheduleDeletes(
+func GetGroupEligibilityScheduleDeletes(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	groupSchedules []*core.Schedule,
-	existingGroupSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
+	existingGroupSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
 	userSchedules []*core.Schedule,
-	existingUserSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
-) ([]*core.GroupAssignmentScheduleDelete, error) {
-	var groupAssignmentScheduleDeletes []*core.GroupAssignmentScheduleDelete
+	existingUserSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
+) ([]*core.GroupEligibilityScheduleDelete, error) {
+	var groupEligibilityScheduleDeletes []*core.GroupEligibilityScheduleDelete
 
-	groupSchedulesToDelete, err := group_assignment_schedule.FilterForAssignmentSchedulesToDelete(
+	groupSchedulesToDelete, err := group_eligibility_schedule.FilterForEligibilitySchedulesToDelete(
 		graphServiceClient,
 		existingGroupSchedules,
 		groupSchedules,
@@ -53,7 +53,7 @@ func GetGroupAssignmentScheduleDeletes(
 			panic(fmt.Errorf("accessId with value \"%s\" not supported", *s.GetAccessId()))
 		}
 
-		scheduleRequest := models.NewPrivilegedAccessGroupAssignmentScheduleRequest()
+		scheduleRequest := models.NewPrivilegedAccessGroupEligibilityScheduleRequest()
 		scheduleRequest.SetAccessId(s.GetAccessId())
 		scheduleRequest.SetAction(to.Ptr(models.ADMINREMOVE_SCHEDULEREQUESTACTIONS))
 		scheduleRequest.SetGroupId(s.GetGroupId())
@@ -62,18 +62,18 @@ func GetGroupAssignmentScheduleDeletes(
 		scheduleRequest.SetTargetScheduleId(s.GetId())
 
 		if *s.GetStatus() == "Provisioned" {
-			groupAssignmentScheduleDeletes = append(groupAssignmentScheduleDeletes, &core.GroupAssignmentScheduleDelete{
-				Cancel:                         false,
-				EndDateTime:                    s.GetScheduleInfo().GetExpiration().GetEndDateTime(),
-				ManagedGroupName:               *managedGroup.GetDisplayName(),
-				PrincipalName:                  *group.GetDisplayName(),
-				PrincipalType:                  armauthorization.PrincipalTypeGroup,
-				GroupAssignmentScheduleRequest: scheduleRequest,
-				RoleName:                       roleName,
-				StartDateTime:                  s.GetScheduleInfo().GetStartDateTime(),
+			groupEligibilityScheduleDeletes = append(groupEligibilityScheduleDeletes, &core.GroupEligibilityScheduleDelete{
+				Cancel:                          false,
+				EndDateTime:                     s.GetScheduleInfo().GetExpiration().GetEndDateTime(),
+				ManagedGroupName:                *managedGroup.GetDisplayName(),
+				PrincipalName:                   *group.GetDisplayName(),
+				PrincipalType:                   armauthorization.PrincipalTypeGroup,
+				GroupEligibilityScheduleRequest: scheduleRequest,
+				RoleName:                        roleName,
+				StartDateTime:                   s.GetScheduleInfo().GetStartDateTime(),
 			})
 		} else {
-			groupAssignmentScheduleDeletes = append(groupAssignmentScheduleDeletes, &core.GroupAssignmentScheduleDelete{
+			groupEligibilityScheduleDeletes = append(groupEligibilityScheduleDeletes, &core.GroupEligibilityScheduleDelete{
 				Cancel:           true,
 				EndDateTime:      s.GetScheduleInfo().GetExpiration().GetEndDateTime(),
 				ManagedGroupName: *managedGroup.GetDisplayName(),
@@ -85,7 +85,7 @@ func GetGroupAssignmentScheduleDeletes(
 		}
 	}
 
-	userSchedulesToDelete, err := group_assignment_schedule.FilterForAssignmentSchedulesToDelete(
+	userSchedulesToDelete, err := group_eligibility_schedule.FilterForEligibilitySchedulesToDelete(
 		graphServiceClient,
 		existingUserSchedules,
 		userSchedules,
@@ -116,7 +116,7 @@ func GetGroupAssignmentScheduleDeletes(
 			panic(fmt.Errorf("accessId with value \"%s\" not supported", *s.GetAccessId()))
 		}
 
-		scheduleRequest := models.NewPrivilegedAccessGroupAssignmentScheduleRequest()
+		scheduleRequest := models.NewPrivilegedAccessGroupEligibilityScheduleRequest()
 		scheduleRequest.SetAccessId(s.GetAccessId())
 		scheduleRequest.SetAction(to.Ptr(models.ADMINREMOVE_SCHEDULEREQUESTACTIONS))
 		scheduleRequest.SetGroupId(s.GetGroupId())
@@ -125,18 +125,18 @@ func GetGroupAssignmentScheduleDeletes(
 		scheduleRequest.SetTargetScheduleId(s.GetId())
 
 		if *s.GetStatus() == "Provisioned" {
-			groupAssignmentScheduleDeletes = append(groupAssignmentScheduleDeletes, &core.GroupAssignmentScheduleDelete{
-				Cancel:                         false,
-				EndDateTime:                    s.GetScheduleInfo().GetExpiration().GetEndDateTime(),
-				ManagedGroupName:               *managedGroup.GetDisplayName(),
-				PrincipalName:                  *user.GetUserPrincipalName(),
-				PrincipalType:                  armauthorization.PrincipalTypeUser,
-				GroupAssignmentScheduleRequest: scheduleRequest,
-				RoleName:                       roleName,
-				StartDateTime:                  s.GetScheduleInfo().GetStartDateTime(),
+			groupEligibilityScheduleDeletes = append(groupEligibilityScheduleDeletes, &core.GroupEligibilityScheduleDelete{
+				Cancel:                          false,
+				EndDateTime:                     s.GetScheduleInfo().GetExpiration().GetEndDateTime(),
+				ManagedGroupName:                *managedGroup.GetDisplayName(),
+				PrincipalName:                   *user.GetUserPrincipalName(),
+				PrincipalType:                   armauthorization.PrincipalTypeUser,
+				GroupEligibilityScheduleRequest: scheduleRequest,
+				RoleName:                        roleName,
+				StartDateTime:                   s.GetScheduleInfo().GetStartDateTime(),
 			})
 		} else {
-			groupAssignmentScheduleDeletes = append(groupAssignmentScheduleDeletes, &core.GroupAssignmentScheduleDelete{
+			groupEligibilityScheduleDeletes = append(groupEligibilityScheduleDeletes, &core.GroupEligibilityScheduleDelete{
 				Cancel:           true,
 				EndDateTime:      s.GetScheduleInfo().GetExpiration().GetEndDateTime(),
 				ManagedGroupName: *managedGroup.GetDisplayName(),
@@ -148,5 +148,5 @@ func GetGroupAssignmentScheduleDeletes(
 		}
 	}
 
-	return groupAssignmentScheduleDeletes, nil
+	return groupEligibilityScheduleDeletes, nil
 }

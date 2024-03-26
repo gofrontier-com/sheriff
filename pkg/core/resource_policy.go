@@ -11,7 +11,7 @@ var (
 	subscriptionRegex  = regexp.MustCompile("^/subscriptions/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 )
 
-func (p *Policy) GetRulesetReferencesForScope(scope string, subscriptionId string) []*RulesetReference {
+func (p *ResourcePolicy) GetRulesetReferencesForScope(scope string, subscriptionId string) []*RulesetReference {
 	if subscriptionRegex.MatchString(scope) {
 		if p.Subscription != nil {
 			return p.Subscription

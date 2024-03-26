@@ -1,4 +1,4 @@
-package group_assignment_schedule
+package group_eligibility_schedule
 
 import (
 	"fmt"
@@ -10,20 +10,20 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func FilterForAssignmentSchedulesToDelete(
+func FilterForEligibilitySchedulesToDelete(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	existingGroupAssignmentSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
-	assignmentSchedules []*core.Schedule,
+	existingGroupEligibilitySchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
+	eligibilitySchedules []*core.Schedule,
 	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, string) (*string, error),
-) (filtered []models.PrivilegedAccessGroupAssignmentScheduleable, err error) {
+) (filtered []models.PrivilegedAccessGroupEligibilityScheduleable, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
 			err = e
 		}
 	}()
 
-	linq.From(existingGroupAssignmentSchedules).WhereT(func(r models.PrivilegedAccessGroupAssignmentScheduleable) bool {
-		any := linq.From(assignmentSchedules).WhereT(func(a *core.Schedule) bool {
+	linq.From(existingGroupEligibilitySchedules).WhereT(func(r models.PrivilegedAccessGroupEligibilityScheduleable) bool {
+		any := linq.From(eligibilitySchedules).WhereT(func(a *core.Schedule) bool {
 			accessId := r.GetAccessId()
 			var roleName string
 			switch *accessId {

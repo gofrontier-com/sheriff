@@ -1,4 +1,4 @@
-package group_schedule
+package schedule
 
 import (
 	"fmt"
@@ -10,20 +10,20 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func FilterForAssignmentSchedulesToUpdate(
+func FilterForGroupAssignmentSchedulesToUpdate(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
-	assignmentSchedules []*core.GroupSchedule,
-	existingGroupAssignmentSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
+	schedules []*core.Schedule,
+	existingSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
 	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, string) (*string, error),
-) (filtered []*core.GroupSchedule, err error) {
+) (filtered []*core.Schedule, err error) {
 	defer func() {
 		if e, ok := recover().(error); ok {
 			err = e
 		}
 	}()
 
-	linq.From(assignmentSchedules).WhereT(func(a *core.GroupSchedule) bool {
-		idx := linq.From(existingGroupAssignmentSchedules).IndexOfT(func(s models.PrivilegedAccessGroupAssignmentScheduleable) bool {
+	linq.From(schedules).WhereT(func(a *core.Schedule) bool {
+		idx := linq.From(existingSchedules).IndexOfT(func(s models.PrivilegedAccessGroupAssignmentScheduleable) bool {
 			accessId := s.GetAccessId()
 			var roleName string
 			switch *accessId {
@@ -48,7 +48,7 @@ func FilterForAssignmentSchedulesToUpdate(
 				panic(err)
 			}
 
-			return a.ManagedGroupName == *group.GetDisplayName() &&
+			return a.Target == *group.GetDisplayName() &&
 				a.RoleName == roleName &&
 				a.PrincipalName == *principalName
 		})
@@ -56,23 +56,23 @@ func FilterForAssignmentSchedulesToUpdate(
 			return false
 		}
 
-		existingGroupAssignmentSchedule := existingGroupAssignmentSchedules[idx]
+		existingSchedule := existingSchedules[idx]
 
 		// If start time in config is nil, then we don't want to update the start time in Azure
 		// because it will be set to when the schedule was created, which is fine.
 		if a.StartDateTime != nil {
 			// If there is a start time in config, compare to Azure and flag for update as needed.
-			if *existingGroupAssignmentSchedule.GetScheduleInfo().GetStartDateTime() != *a.StartDateTime {
+			if *existingSchedule.GetScheduleInfo().GetStartDateTime() != *a.StartDateTime {
 				return true
 			}
 		}
 
 		// If end date is present in config and Azure, compare and flag for update as needed.
-		if existingGroupAssignmentSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() != nil && a.EndDateTime != nil {
-			if *existingGroupAssignmentSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() != *a.EndDateTime {
+		if existingSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() != nil && a.EndDateTime != nil {
+			if *existingSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() != *a.EndDateTime {
 				return true
 			}
-		} else if (existingGroupAssignmentSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() != nil && a.EndDateTime == nil) || (existingGroupAssignmentSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() == nil && a.EndDateTime != nil) {
+		} else if (existingSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() != nil && a.EndDateTime == nil) || (existingSchedule.GetScheduleInfo().GetExpiration().GetEndDateTime() == nil && a.EndDateTime != nil) {
 			// If end date is present in config but not Azure, or vice versa, flag for update.
 			return true
 		}

@@ -17,26 +17,26 @@ func GetRoleAssignmentScheduleCreates(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	groupAssignmentSchedules []*core.Schedule,
-	existingGroupRoleAssignmentSchedules []*armauthorization.RoleAssignmentSchedule,
-	userAssignmentSchedules []*core.Schedule,
-	existingUserRoleAssignmentSchedules []*armauthorization.RoleAssignmentSchedule,
+	groupSchedules []*core.Schedule,
+	existingGroupSchedules []*armauthorization.RoleAssignmentSchedule,
+	userSchedules []*core.Schedule,
+	existingUserSchedules []*armauthorization.RoleAssignmentSchedule,
 ) ([]*core.RoleAssignmentScheduleCreate, error) {
 	var roleAssignmentScheduleCreates []*core.RoleAssignmentScheduleCreate
 
-	groupAssignmentSchedulesToCreate, err := schedule.FilterForAssignmentSchedulesToCreate(
+	groupSchedulesToCreate, err := schedule.FilterForRoleAssignmentSchedulesToCreate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		groupAssignmentSchedules,
-		existingGroupRoleAssignmentSchedules,
+		groupSchedules,
+		existingGroupSchedules,
 		group.GetGroupDisplayNameById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range groupAssignmentSchedulesToCreate {
+	for _, a := range groupSchedulesToCreate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -67,24 +67,24 @@ func GetRoleAssignmentScheduleCreates(
 			},
 			RoleAssignmentScheduleRequestName: uuid.New().String(),
 			RoleName:                          *roleDefinition.Properties.RoleName,
-			Scope:                             a.Scope,
+			Scope:                             a.Target,
 			StartDateTime:                     scheduleInfo.StartDateTime,
 		})
 	}
 
-	userAssignmentSchedulesToCreate, err := schedule.FilterForAssignmentSchedulesToCreate(
+	userSchedulesToCreate, err := schedule.FilterForRoleAssignmentSchedulesToCreate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		userAssignmentSchedules,
-		existingUserRoleAssignmentSchedules,
+		userSchedules,
+		existingUserSchedules,
 		user.GetUserUpnById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range userAssignmentSchedulesToCreate {
+	for _, a := range userSchedulesToCreate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -115,7 +115,7 @@ func GetRoleAssignmentScheduleCreates(
 			},
 			RoleAssignmentScheduleRequestName: uuid.New().String(),
 			RoleName:                          *roleDefinition.Properties.RoleName,
-			Scope:                             a.Scope,
+			Scope:                             a.Target,
 			StartDateTime:                     scheduleInfo.StartDateTime,
 		})
 	}

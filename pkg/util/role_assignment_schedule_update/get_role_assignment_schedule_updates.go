@@ -21,26 +21,26 @@ func GetRoleAssignmentScheduleUpdates(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	groupAssignmentSchedules []*core.Schedule,
-	existingGroupRoleAssignmentSchedules []*armauthorization.RoleAssignmentSchedule,
-	userAssignmentSchedules []*core.Schedule,
-	existingUserRoleAssignmentSchedules []*armauthorization.RoleAssignmentSchedule,
+	groupSchedules []*core.Schedule,
+	existingGroupSchedules []*armauthorization.RoleAssignmentSchedule,
+	userSchedules []*core.Schedule,
+	existingUserSchedules []*armauthorization.RoleAssignmentSchedule,
 ) ([]*core.RoleAssignmentScheduleUpdate, error) {
 	var roleAssignmentScheduleUpdates []*core.RoleAssignmentScheduleUpdate
 
-	groupAssignmentSchedulesToUpdate, err := schedule.FilterForAssignmentSchedulesToUpdate(
+	groupSchedulesToUpdate, err := schedule.FilterForRoleAssignmentSchedulesToUpdate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		groupAssignmentSchedules,
-		existingGroupRoleAssignmentSchedules,
+		groupSchedules,
+		existingGroupSchedules,
 		group.GetGroupDisplayNameById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range groupAssignmentSchedulesToUpdate {
+	for _, a := range groupSchedulesToUpdate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -55,22 +55,22 @@ func GetRoleAssignmentScheduleUpdates(
 			return nil, err
 		}
 
-		existingGroupRoleAssignmentScheduleIdx := linq.From(existingGroupRoleAssignmentSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
+		existingScheduleIdx := linq.From(existingGroupSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
+			return *s.Properties.Scope == a.Target &&
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *group.GetId()
 		})
-		if existingGroupRoleAssignmentScheduleIdx == -1 {
+		if existingScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role assignment schedule not found")
 		}
 
-		existingGroupRoleAssignmentSchedule := existingGroupRoleAssignmentSchedules[existingGroupRoleAssignmentScheduleIdx]
+		existingSchedule := existingGroupSchedules[existingScheduleIdx]
 
 		var startTime *time.Time
 		if a.StartDateTime != nil {
 			startTime = a.StartDateTime
 		} else {
-			startTime = existingGroupRoleAssignmentSchedule.Properties.StartDateTime
+			startTime = existingSchedule.Properties.StartDateTime
 		}
 
 		scheduleInfo := schedule_info.GetRoleAssignmentScheduleInfo(startTime, a.EndDateTime)
@@ -89,24 +89,24 @@ func GetRoleAssignmentScheduleUpdates(
 			},
 			RoleAssignmentScheduleRequestName: uuid.New().String(),
 			RoleName:                          *roleDefinition.Properties.RoleName,
-			Scope:                             *existingGroupRoleAssignmentSchedule.Properties.Scope,
+			Scope:                             *existingSchedule.Properties.Scope,
 			StartDateTime:                     scheduleInfo.StartDateTime,
 		})
 	}
 
-	userAssignmentSchedulesToUpdate, err := schedule.FilterForAssignmentSchedulesToUpdate(
+	userSchedulesToUpdate, err := schedule.FilterForRoleAssignmentSchedulesToUpdate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		userAssignmentSchedules,
-		existingUserRoleAssignmentSchedules,
+		userSchedules,
+		existingUserSchedules,
 		user.GetUserUpnById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range userAssignmentSchedulesToUpdate {
+	for _, a := range userSchedulesToUpdate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -121,22 +121,22 @@ func GetRoleAssignmentScheduleUpdates(
 			return nil, err
 		}
 
-		existingUserRoleAssignmentScheduleIdx := linq.From(existingUserRoleAssignmentSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
+		existingScheduleIdx := linq.From(existingUserSchedules).IndexOfT(func(s *armauthorization.RoleAssignmentSchedule) bool {
+			return *s.Properties.Scope == a.Target &&
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *user.GetId()
 		})
-		if existingUserRoleAssignmentScheduleIdx == -1 {
+		if existingScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role assignment schedule not found")
 		}
 
-		existingUserRoleAssignmentSchedule := existingUserRoleAssignmentSchedules[existingUserRoleAssignmentScheduleIdx]
+		existingSchedule := existingUserSchedules[existingScheduleIdx]
 
 		var startTime *time.Time
 		if a.StartDateTime != nil {
 			startTime = a.StartDateTime
 		} else {
-			startTime = existingUserRoleAssignmentSchedule.Properties.StartDateTime
+			startTime = existingSchedule.Properties.StartDateTime
 		}
 
 		scheduleInfo := schedule_info.GetRoleAssignmentScheduleInfo(startTime, a.EndDateTime)
@@ -155,7 +155,7 @@ func GetRoleAssignmentScheduleUpdates(
 			},
 			RoleAssignmentScheduleRequestName: uuid.New().String(),
 			RoleName:                          *roleDefinition.Properties.RoleName,
-			Scope:                             *existingUserRoleAssignmentSchedule.Properties.Scope,
+			Scope:                             *existingSchedule.Properties.Scope,
 			StartDateTime:                     scheduleInfo.StartDateTime,
 		})
 	}

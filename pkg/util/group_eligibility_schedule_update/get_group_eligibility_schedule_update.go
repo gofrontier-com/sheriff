@@ -1,4 +1,4 @@
-package group_assignment_schedule_update
+package group_eligibility_schedule_update
 
 import (
 	"fmt"
@@ -16,16 +16,16 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func GetGroupAssignmentScheduleUpdates(
+func GetGroupEligibilityScheduleUpdates(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	groupSchedules []*core.Schedule,
-	existingGroupSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
+	existingGroupSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
 	userSchedules []*core.Schedule,
-	existingUserSchedules []models.PrivilegedAccessGroupAssignmentScheduleable,
-) ([]*core.GroupAssignmentScheduleUpdate, error) {
-	var groupAssignmentScheduleUpdates []*core.GroupAssignmentScheduleUpdate
+	existingUserSchedules []models.PrivilegedAccessGroupEligibilityScheduleable,
+) ([]*core.GroupEligibilityScheduleUpdate, error) {
+	var groupEligibilityScheduleUpdates []*core.GroupEligibilityScheduleUpdate
 
-	groupSchedulesToUpdate, err := schedule.FilterForGroupAssignmentSchedulesToUpdate(
+	groupSchedulesToUpdate, err := schedule.FilterForGroupEligibilitySchedulesToUpdate(
 		graphServiceClient,
 		groupSchedules,
 		existingGroupSchedules,
@@ -46,7 +46,7 @@ func GetGroupAssignmentScheduleUpdates(
 			return nil, err
 		}
 
-		existingScheduleIdx := linq.From(existingGroupSchedules).IndexOfT(func(s models.PrivilegedAccessGroupAssignmentScheduleable) bool {
+		existingScheduleIdx := linq.From(existingGroupSchedules).IndexOfT(func(s models.PrivilegedAccessGroupEligibilityScheduleable) bool {
 			var roleName string
 			switch *s.GetAccessId() {
 			case models.MEMBER_PRIVILEGEDACCESSGROUPRELATIONSHIPS:
@@ -61,7 +61,7 @@ func GetGroupAssignmentScheduleUpdates(
 				*s.GetPrincipalId() == *group.GetId()
 		})
 		if existingScheduleIdx == -1 {
-			return nil, fmt.Errorf("existing group assignment schedule not found")
+			return nil, fmt.Errorf("existing group eligibility schedule not found")
 		}
 
 		existingSchedule := existingGroupSchedules[existingScheduleIdx]
@@ -85,7 +85,7 @@ func GetGroupAssignmentScheduleUpdates(
 
 		scheduleInfo := schedule_info.GetGroupScheduleInfo(startTime, a.EndDateTime)
 
-		scheduleRequest := models.NewPrivilegedAccessGroupAssignmentScheduleRequest()
+		scheduleRequest := models.NewPrivilegedAccessGroupEligibilityScheduleRequest()
 		scheduleRequest.SetAccessId(&accessId)
 		scheduleRequest.SetAction(to.Ptr(models.ADMINUPDATE_SCHEDULEREQUESTACTIONS))
 		scheduleRequest.SetGroupId(managedGroup.GetId())
@@ -93,18 +93,18 @@ func GetGroupAssignmentScheduleUpdates(
 		scheduleRequest.SetPrincipalId(group.GetId())
 		scheduleRequest.SetScheduleInfo(scheduleInfo)
 
-		groupAssignmentScheduleUpdates = append(groupAssignmentScheduleUpdates, &core.GroupAssignmentScheduleUpdate{
-			EndDateTime:                    scheduleInfo.GetExpiration().GetEndDateTime(),
-			ManagedGroupName:               *managedGroup.GetDisplayName(), // TODO: Not consistent with role approach, but okay?
-			PrincipalName:                  *group.GetDisplayName(),
-			PrincipalType:                  armauthorization.PrincipalTypeGroup,
-			GroupAssignmentScheduleRequest: scheduleRequest,
-			RoleName:                       a.RoleName,
-			StartDateTime:                  scheduleInfo.GetStartDateTime(),
+		groupEligibilityScheduleUpdates = append(groupEligibilityScheduleUpdates, &core.GroupEligibilityScheduleUpdate{
+			EndDateTime:                     scheduleInfo.GetExpiration().GetEndDateTime(),
+			ManagedGroupName:                *managedGroup.GetDisplayName(), // TODO: Not consistent with role approach, but okay?
+			PrincipalName:                   *group.GetDisplayName(),
+			PrincipalType:                   armauthorization.PrincipalTypeGroup,
+			GroupEligibilityScheduleRequest: scheduleRequest,
+			RoleName:                        a.RoleName,
+			StartDateTime:                   scheduleInfo.GetStartDateTime(),
 		})
 	}
 
-	userSchedulesToUpdate, err := schedule.FilterForGroupAssignmentSchedulesToUpdate(
+	userSchedulesToUpdate, err := schedule.FilterForGroupEligibilitySchedulesToUpdate(
 		graphServiceClient,
 		userSchedules,
 		existingUserSchedules,
@@ -125,7 +125,7 @@ func GetGroupAssignmentScheduleUpdates(
 			return nil, err
 		}
 
-		existingScheduleIdx := linq.From(existingUserSchedules).IndexOfT(func(s models.PrivilegedAccessGroupAssignmentScheduleable) bool {
+		existingScheduleIdx := linq.From(existingUserSchedules).IndexOfT(func(s models.PrivilegedAccessGroupEligibilityScheduleable) bool {
 			var roleName string
 			switch *s.GetAccessId() {
 			case models.MEMBER_PRIVILEGEDACCESSGROUPRELATIONSHIPS:
@@ -140,7 +140,7 @@ func GetGroupAssignmentScheduleUpdates(
 				*s.GetPrincipalId() == *user.GetId()
 		})
 		if existingScheduleIdx == -1 {
-			return nil, fmt.Errorf("existing group assignment schedule not found")
+			return nil, fmt.Errorf("existing group eligibility schedule not found")
 		}
 
 		existingSchedule := existingUserSchedules[existingScheduleIdx]
@@ -164,7 +164,7 @@ func GetGroupAssignmentScheduleUpdates(
 
 		scheduleInfo := schedule_info.GetGroupScheduleInfo(startTime, a.EndDateTime)
 
-		scheduleRequest := models.NewPrivilegedAccessGroupAssignmentScheduleRequest()
+		scheduleRequest := models.NewPrivilegedAccessGroupEligibilityScheduleRequest()
 		scheduleRequest.SetAccessId(&accessId)
 		scheduleRequest.SetAction(to.Ptr(models.ADMINUPDATE_SCHEDULEREQUESTACTIONS))
 		scheduleRequest.SetGroupId(managedGroup.GetId())
@@ -172,16 +172,16 @@ func GetGroupAssignmentScheduleUpdates(
 		scheduleRequest.SetPrincipalId(user.GetId())
 		scheduleRequest.SetScheduleInfo(scheduleInfo)
 
-		groupAssignmentScheduleUpdates = append(groupAssignmentScheduleUpdates, &core.GroupAssignmentScheduleUpdate{
-			EndDateTime:                    scheduleInfo.GetExpiration().GetEndDateTime(),
-			ManagedGroupName:               *managedGroup.GetDisplayName(), // TODO: Not consistent with role approach, but okay?
-			PrincipalName:                  *user.GetUserPrincipalName(),
-			PrincipalType:                  armauthorization.PrincipalTypeUser,
-			GroupAssignmentScheduleRequest: scheduleRequest,
-			RoleName:                       a.RoleName,
-			StartDateTime:                  scheduleInfo.GetStartDateTime(),
+		groupEligibilityScheduleUpdates = append(groupEligibilityScheduleUpdates, &core.GroupEligibilityScheduleUpdate{
+			EndDateTime:                     scheduleInfo.GetExpiration().GetEndDateTime(),
+			ManagedGroupName:                *managedGroup.GetDisplayName(), // TODO: Not consistent with role approach, but okay?
+			PrincipalName:                   *user.GetUserPrincipalName(),
+			PrincipalType:                   armauthorization.PrincipalTypeUser,
+			GroupEligibilityScheduleRequest: scheduleRequest,
+			RoleName:                        a.RoleName,
+			StartDateTime:                   scheduleInfo.GetStartDateTime(),
 		})
 	}
 
-	return groupAssignmentScheduleUpdates, nil
+	return groupEligibilityScheduleUpdates, nil
 }

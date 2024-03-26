@@ -1,4 +1,4 @@
-package request_schedule
+package schedule_info
 
 import (
 	"time"
@@ -7,7 +7,7 @@ import (
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-func GetGroupAssignmentRequestSchedule(
+func GetGroupScheduleInfo(
 	startDateTime *time.Time,
 	endDateTime *time.Time,
 ) *models.RequestSchedule {

@@ -4,50 +4,164 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/authorization/armauthorization/v2"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
 
-type ResourcesConfig struct {
-	Groups   []*Principal                   `validate:"dive"`
-	Policies []*Policy                      `validate:"dive"`
-	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
-	Users    []*Principal                   `validate:"dive"`
-}
-
-type Principal struct {
-	Name           string
-	Subscription   *ScopeConfiguration            `yaml:"subscription"`
-	ResourceGroups map[string]*ScopeConfiguration `yaml:"resourceGroups"`
-	Resources      map[string]*ScopeConfiguration `yaml:"resources"`
-}
-
-type ScopeConfiguration struct {
-	Active   []*Schedule `yaml:"active"`
-	Eligible []*Schedule `yaml:"eligible"`
-}
+//region shared
 
 type Schedule struct {
 	EndDateTime   *time.Time `yaml:"endDateTime"`
 	PrincipalName string
 	RoleName      string `yaml:"roleName" validate:"required"`
-	Scope         string
+	Target        string
 	StartDateTime *time.Time `yaml:"startDateTime"`
+}
+
+type RoleManagementPolicyRule struct {
+	ID    string      `yaml:"id" validate:"required"`
+	Patch interface{} `yaml:"patch" validate:"required"`
+}
+
+type RoleManagementPolicyRuleset struct {
+	Name  string
+	Rules []*RoleManagementPolicyRule `yaml:"rules"`
 }
 
 type RulesetReference struct {
 	RulesetName string `yaml:"rulesetName" validate:"required"`
 }
 
-type Policy struct {
+type TargetRoleNameCombination struct {
+	RoleName string
+	Target   string
+}
+
+type ConfigurationEmptyError struct{}
+
+//endregion
+
+//region groups
+
+type GroupsConfig struct {
+	Groups   []*GroupPrincipal              `validate:"dive"`
+	Policies []*GroupPolicy                 `validate:"dive"`
+	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
+	Users    []*GroupPrincipal              `validate:"dive"`
+}
+
+type GroupPrincipal struct {
+	Name          string
+	ManagedGroups map[string]*GroupConfiguration `yaml:"managedGroups"`
+}
+
+type GroupConfiguration struct {
+	Active   []*Schedule `yaml:"active"`
+	Eligible []*Schedule `yaml:"eligible"`
+}
+
+type GroupPolicy struct {
+	Default       []*RulesetReference `yaml:"default"`
+	Name          string
+	ManagedGroups map[string][]*RulesetReference `yaml:"managedGroups"`
+}
+
+type GroupAssignmentScheduleCreate struct {
+	EndDateTime                    *time.Time
+	PrincipalName                  string
+	PrincipalType                  armauthorization.PrincipalType
+	GroupAssignmentScheduleRequest *models.PrivilegedAccessGroupAssignmentScheduleRequest
+	ManagedGroupName               string
+	RoleName                       string
+	StartDateTime                  *time.Time
+}
+
+type GroupAssignmentScheduleDelete struct {
+	Cancel                         bool
+	EndDateTime                    *time.Time
+	PrincipalName                  string
+	PrincipalType                  armauthorization.PrincipalType
+	GroupAssignmentScheduleRequest *models.PrivilegedAccessGroupAssignmentScheduleRequest
+	ManagedGroupName               string
+	RoleName                       string
+	StartDateTime                  *time.Time
+}
+
+type GroupAssignmentScheduleUpdate struct {
+	EndDateTime                    *time.Time
+	PrincipalName                  string
+	PrincipalType                  armauthorization.PrincipalType
+	GroupAssignmentScheduleRequest *models.PrivilegedAccessGroupAssignmentScheduleRequest
+	ManagedGroupName               string
+	RoleName                       string
+	StartDateTime                  *time.Time
+}
+
+type GroupEligibilityScheduleCreate struct {
+	EndDateTime                     *time.Time
+	PrincipalName                   string
+	PrincipalType                   armauthorization.PrincipalType
+	GroupEligibilityScheduleRequest *models.PrivilegedAccessGroupEligibilityScheduleRequest
+	ManagedGroupName                string
+	RoleName                        string
+	StartDateTime                   *time.Time
+}
+
+type GroupEligibilityScheduleDelete struct {
+	Cancel                          bool
+	EndDateTime                     *time.Time
+	PrincipalName                   string
+	PrincipalType                   armauthorization.PrincipalType
+	GroupEligibilityScheduleRequest *models.PrivilegedAccessGroupEligibilityScheduleRequest
+	ManagedGroupName                string
+	RoleName                        string
+	StartDateTime                   *time.Time
+}
+
+type GroupEligibilityScheduleUpdate struct {
+	EndDateTime                     *time.Time
+	PrincipalName                   string
+	PrincipalType                   armauthorization.PrincipalType
+	GroupEligibilityScheduleRequest *models.PrivilegedAccessGroupEligibilityScheduleRequest
+	ManagedGroupName                string
+	RoleName                        string
+	StartDateTime                   *time.Time
+}
+
+type GroupRoleManagementPolicyUpdate struct {
+	ManagedGroupName     string
+	RoleManagementPolicy models.UnifiedRoleManagementPolicy
+	RoleName             string
+}
+
+//endregion
+
+//region resources
+
+type ResourcesConfig struct {
+	Groups   []*ResourcePrincipal           `validate:"dive"`
+	Policies []*ResourcePolicy              `validate:"dive"`
+	Rulesets []*RoleManagementPolicyRuleset `validate:"dive"`
+	Users    []*ResourcePrincipal           `validate:"dive"`
+}
+
+type ResourcePrincipal struct {
+	Name           string
+	Subscription   *ResourceConfiguration            `yaml:"subscription"`
+	ResourceGroups map[string]*ResourceConfiguration `yaml:"resourceGroups"`
+	Resources      map[string]*ResourceConfiguration `yaml:"resources"`
+}
+
+type ResourceConfiguration struct {
+	Active   []*Schedule `yaml:"active"`
+	Eligible []*Schedule `yaml:"eligible"`
+}
+
+type ResourcePolicy struct {
 	Default        []*RulesetReference `yaml:"default"`
 	Name           string
 	Subscription   []*RulesetReference            `yaml:"subscription"`
 	ResourceGroups map[string][]*RulesetReference `yaml:"resourceGroups"`
 	Resources      map[string][]*RulesetReference `yaml:"resources"`
-}
-
-type ScopeRoleNameCombination struct {
-	RoleName string
-	Scope    string
 }
 
 type RoleAssignmentScheduleCreate struct {
@@ -118,20 +232,10 @@ type RoleEligibilityScheduleUpdate struct {
 	StartDateTime                      *time.Time
 }
 
-type RoleManagementPolicyRule struct {
-	ID    string      `yaml:"id" validate:"required"`
-	Patch interface{} `yaml:"patch" validate:"required"`
-}
-
-type RoleManagementPolicyRuleset struct {
-	Name  string
-	Rules []*RoleManagementPolicyRule `yaml:"rules"`
-}
-
-type RoleManagementPolicyUpdate struct {
+type ResourceRoleManagementPolicyUpdate struct {
 	RoleManagementPolicy *armauthorization.RoleManagementPolicy
 	RoleName             string
 	Scope                string
 }
 
-type ConfigurationEmptyError struct{}
+//endregion

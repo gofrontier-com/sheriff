@@ -8,10 +8,19 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/identitygovernance"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	gocache "github.com/patrickmn/go-cache"
 )
 
-func GetGroupEligibilitySchedules(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupIds []string, filter func(*msgraphsdkgo.GraphServiceClient, *models.PrivilegedAccessGroupEligibilityScheduleable) bool) ([]*models.PrivilegedAccessGroupEligibilityScheduleable, error) {
-	var groupEligibilitySchedules []*models.PrivilegedAccessGroupEligibilityScheduleable
+var cache gocache.Cache
+
+func init() {
+	cache = *gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+}
+
+// TODO: Cache.
+
+func GetGroupEligibilitySchedules(graphServiceClient *msgraphsdkgo.GraphServiceClient, groupIds []string, filter func(*msgraphsdkgo.GraphServiceClient, models.PrivilegedAccessGroupEligibilityScheduleable) bool) ([]models.PrivilegedAccessGroupEligibilityScheduleable, error) {
+	var groupEligibilitySchedules []models.PrivilegedAccessGroupEligibilityScheduleable
 
 	for _, i := range groupIds {
 		requestConfiguration := &identitygovernance.PrivilegedAccessGroupEligibilitySchedulesRequestBuilderGetRequestConfiguration{
@@ -24,12 +33,10 @@ func GetGroupEligibilitySchedules(graphServiceClient *msgraphsdkgo.GraphServiceC
 			return nil, err
 		}
 
-		for _, r := range result.GetValue() {
-			groupEligibilitySchedules = append(groupEligibilitySchedules, &r)
-		}
+		groupEligibilitySchedules = append(groupEligibilitySchedules, result.GetValue()...)
 	}
 
-	var filteredGroupEligibilitySchedules []*models.PrivilegedAccessGroupEligibilityScheduleable
+	var filteredGroupEligibilitySchedules []models.PrivilegedAccessGroupEligibilityScheduleable
 	for _, s := range groupEligibilitySchedules {
 		if filter(graphServiceClient, s) {
 			filteredGroupEligibilitySchedules = append(filteredGroupEligibilitySchedules, s)

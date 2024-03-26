@@ -8,12 +8,12 @@ import (
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
-func FilterForEligibilitySchedulesToUpdate(
+func FilterForRoleEligibilitySchedulesToUpdate(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	eligibilitySchedules []*core.Schedule,
-	existingRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	schedules []*core.Schedule,
+	existingSchedules []*armauthorization.RoleEligibilitySchedule,
 	getPrincipalName func(*msgraphsdkgo.GraphServiceClient, string) (*string, error),
 ) (filtered []*core.Schedule, err error) {
 	defer func() {
@@ -22,8 +22,8 @@ func FilterForEligibilitySchedulesToUpdate(
 		}
 	}()
 
-	linq.From(eligibilitySchedules).WhereT(func(a *core.Schedule) bool {
-		idx := linq.From(existingRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
+	linq.From(schedules).WhereT(func(a *core.Schedule) bool {
+		idx := linq.From(existingSchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
 			roleDefinition, err := role_definition.GetRoleDefinitionById(
 				clientFactory,
 				*s.Properties.RoleDefinitionID,
@@ -40,7 +40,7 @@ func FilterForEligibilitySchedulesToUpdate(
 				panic(err)
 			}
 
-			return a.Scope == *s.Properties.Scope &&
+			return a.Target == *s.Properties.Scope &&
 				a.RoleName == *roleDefinition.Properties.RoleName &&
 				a.PrincipalName == *principalName
 		})
@@ -48,23 +48,23 @@ func FilterForEligibilitySchedulesToUpdate(
 			return false
 		}
 
-		existingRoleEligibilitySchedule := existingRoleEligibilitySchedules[idx]
+		existingSchedule := existingSchedules[idx]
 
 		// If start time in config is nil, then we don't want to update the start time in Azure
 		// because it will be set to when the schedule was created, which is fine.
 		if a.StartDateTime != nil {
 			// If there is a start time in config, compare to Azure and flag for update as needed.
-			if *existingRoleEligibilitySchedule.Properties.StartDateTime != *a.StartDateTime {
+			if *existingSchedule.Properties.StartDateTime != *a.StartDateTime {
 				return true
 			}
 		}
 
 		// If end date is present in config and Azure, compare and flag for update as needed.
-		if existingRoleEligibilitySchedule.Properties.EndDateTime != nil && a.EndDateTime != nil {
-			if *existingRoleEligibilitySchedule.Properties.EndDateTime != *a.EndDateTime {
+		if existingSchedule.Properties.EndDateTime != nil && a.EndDateTime != nil {
+			if *existingSchedule.Properties.EndDateTime != *a.EndDateTime {
 				return true
 			}
-		} else if (existingRoleEligibilitySchedule.Properties.EndDateTime != nil && a.EndDateTime == nil) || (existingRoleEligibilitySchedule.Properties.EndDateTime == nil && a.EndDateTime != nil) {
+		} else if (existingSchedule.Properties.EndDateTime != nil && a.EndDateTime == nil) || (existingSchedule.Properties.EndDateTime == nil && a.EndDateTime != nil) {
 			// If end date is present in config but not Azure, or vice versa, flag for update.
 			return true
 		}
