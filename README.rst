@@ -74,7 +74,7 @@ Configuration
 Azure Resources
 ~~~~~~~~~~~~~~~
 
-.. code:: bash
+.. code-block:: bash
 
     groups/
       <group name>.yml
