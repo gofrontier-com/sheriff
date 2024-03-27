@@ -76,19 +76,19 @@ Azure Resources
 
 .. code:: bash
 
-  groups/
-    <group name>.yml
-    ...
-  users/
-    <user upn>.yml
-    ...
-  policies/
-    <role name>.yml
-    ...
-    rulesets/
-      <ruleset name>.yml
+    groups/
+      <group name>.yml
       ...
-    ...
+    users/
+      <user upn>.yml
+      ...
+    policies/
+      <role name>.yml
+      ...
+      rulesets/
+        <ruleset name>.yml
+        ...
+      ...
 
 Configuration of active and eligible role assigments is managed via YAML files per group and/or user,
 in which both active and eligible role assignments are defined.
