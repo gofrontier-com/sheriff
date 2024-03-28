@@ -8,32 +8,32 @@ import (
 )
 
 func (c *ResourcesConfig) GetGroupAssignmentSchedules(subscriptionId string) []*Schedule {
-	return getAssignmentSchedules(c.Groups, subscriptionId)
+	return getResourcesAssignmentSchedules(c.Groups, subscriptionId)
 }
 
 func (c *ResourcesConfig) GetGroupEligibilitySchedules(subscriptionId string) []*Schedule {
-	return getEligibilitySchedules(c.Groups, subscriptionId)
+	return getResourcesEligibilitySchedules(c.Groups, subscriptionId)
 }
 
-func (c *ResourcesConfig) GetPolicyByRoleName(roleName string) *Policy {
-	policy := linq.From(c.Policies).SingleWithT(func(p *Policy) bool {
+func (c *ResourcesConfig) GetPolicyByRoleName(roleName string) *ResourcePolicy {
+	policy := linq.From(c.Policies).SingleWithT(func(p *ResourcePolicy) bool {
 		return p.Name == roleName
 	})
 
 	if policy == nil {
-		policy = linq.From(c.Policies).SingleWithT(func(p *Policy) bool {
+		policy = linq.From(c.Policies).SingleWithT(func(p *ResourcePolicy) bool {
 			return p.Name == "default"
 		})
 	}
 
-	if p, ok := policy.(*Policy); ok {
+	if p, ok := policy.(*ResourcePolicy); ok {
 		return p
 	} else {
 		return nil
 	}
 }
 
-func (c *ResourcesConfig) GetScopeRoleNameCombinations(subscriptionId string) []*ScopeRoleNameCombination {
+func (c *ResourcesConfig) GetScopeRoleNameCombinations(subscriptionId string) []*TargetRoleNameCombination {
 	groupAssignmentSchedules := c.GetGroupAssignmentSchedules(subscriptionId)
 	userAssignmentSchedules := c.GetUserAssignmentSchedules(subscriptionId)
 	groupEligibilitySchedules := c.GetGroupEligibilitySchedules(subscriptionId)
@@ -43,31 +43,31 @@ func (c *ResourcesConfig) GetScopeRoleNameCombinations(subscriptionId string) []
 	allSchedules = append(allSchedules, groupEligibilitySchedules...)
 	allSchedules = append(allSchedules, userEligibilitySchedules...)
 
-	var scopeRoleNameCombinations []*ScopeRoleNameCombination
-	linq.From(allSchedules).SelectT(func(s *Schedule) *ScopeRoleNameCombination {
-		return &ScopeRoleNameCombination{
+	var scopeRoleNameCombinations []*TargetRoleNameCombination
+	linq.From(allSchedules).SelectT(func(s *Schedule) *TargetRoleNameCombination {
+		return &TargetRoleNameCombination{
 			RoleName: s.RoleName,
-			Scope:    s.Scope,
+			Target:   s.Target,
 		}
-	}).DistinctByT(func(s *ScopeRoleNameCombination) string {
-		return fmt.Sprintf("%s:%s", s.Scope, s.RoleName)
+	}).DistinctByT(func(s *TargetRoleNameCombination) string {
+		return fmt.Sprintf("%s:%s", s.Target, s.RoleName)
 	}).ToSlice(&scopeRoleNameCombinations)
 
 	return scopeRoleNameCombinations
 }
 
 func (c *ResourcesConfig) GetUserAssignmentSchedules(subscriptionId string) []*Schedule {
-	return getAssignmentSchedules(c.Users, subscriptionId)
+	return getResourcesAssignmentSchedules(c.Users, subscriptionId)
 }
 
 func (c *ResourcesConfig) GetUserEligibilitySchedules(subscriptionId string) []*Schedule {
-	return getEligibilitySchedules(c.Users, subscriptionId)
+	return getResourcesEligibilitySchedules(c.Users, subscriptionId)
 }
 
 func (c *ResourcesConfig) Validate() error {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	validate.RegisterStructValidation(ResourcesConfigStructLevelValidation, ResourcesConfig{})
-	validate.RegisterStructValidation(ScopeConfigurationStructLevelValidation, ScopeConfiguration{})
+	validate.RegisterStructValidation(ResourceConfigurationStructLevelValidation, ResourceConfiguration{})
 
 	err := validate.Struct(c)
 	if err != nil {
@@ -104,15 +104,15 @@ func ResourcesConfigStructLevelValidation(sl validator.StructLevel) {
 	// TODO: Check for policy conflicts.
 }
 
-func ScopeConfigurationStructLevelValidation(sl validator.StructLevel) {
-	scopeConfiguration := sl.Current().Interface().(ScopeConfiguration)
+func ResourceConfigurationStructLevelValidation(sl validator.StructLevel) {
+	resourceConfiguration := sl.Current().Interface().(ResourceConfiguration)
 
-	if countUniqueSchedules(scopeConfiguration.Active) != len(scopeConfiguration.Active) {
-		sl.ReportError(scopeConfiguration.Active, "Active", "", "duplicate active role name", "")
+	if countUniqueSchedules(resourceConfiguration.Active) != len(resourceConfiguration.Active) {
+		sl.ReportError(resourceConfiguration.Active, "Active", "", "duplicate active role name", "")
 	}
 
-	if countUniqueSchedules(scopeConfiguration.Eligible) != len(scopeConfiguration.Eligible) {
-		sl.ReportError(scopeConfiguration.Eligible, "Eligible", "", "duplicate eligible role name", "")
+	if countUniqueSchedules(resourceConfiguration.Eligible) != len(resourceConfiguration.Eligible) {
+		sl.ReportError(resourceConfiguration.Eligible, "Eligible", "", "duplicate eligible role name", "")
 	}
 }
 
@@ -129,14 +129,14 @@ func countUniqueSchedules(schedules []*Schedule) int {
 	return len(unique)
 }
 
-func getAssignmentSchedules(principals []*Principal, subscriptionId string) []*Schedule {
+func getResourcesAssignmentSchedules(principals []*ResourcePrincipal, subscriptionId string) []*Schedule {
 	schedules := []*Schedule{}
 
 	for _, p := range principals {
 		if p.Subscription != nil {
 			for _, s := range p.Subscription.Active {
 				s.PrincipalName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
+				s.Target = fmt.Sprintf("/subscriptions/%s", subscriptionId)
 				schedules = append(schedules, s)
 			}
 		}
@@ -149,7 +149,7 @@ func getAssignmentSchedules(principals []*Principal, subscriptionId string) []*S
 		for _, r := range resourceGroupNames {
 			for _, s := range p.ResourceGroups[r].Active {
 				s.PrincipalName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
+				s.Target = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
 				schedules = append(schedules, s)
 			}
 		}
@@ -162,7 +162,7 @@ func getAssignmentSchedules(principals []*Principal, subscriptionId string) []*S
 		for _, r := range resourceNames {
 			for _, s := range p.Resources[r].Active {
 				s.PrincipalName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
+				s.Target = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
 				schedules = append(schedules, s)
 			}
 		}
@@ -171,14 +171,14 @@ func getAssignmentSchedules(principals []*Principal, subscriptionId string) []*S
 	return schedules
 }
 
-func getEligibilitySchedules(principals []*Principal, subscriptionId string) []*Schedule {
+func getResourcesEligibilitySchedules(principals []*ResourcePrincipal, subscriptionId string) []*Schedule {
 	schedules := []*Schedule{}
 
 	for _, p := range principals {
 		if p.Subscription != nil {
 			for _, s := range p.Subscription.Eligible {
 				s.PrincipalName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s", subscriptionId)
+				s.Target = fmt.Sprintf("/subscriptions/%s", subscriptionId)
 				schedules = append(schedules, s)
 			}
 		}
@@ -191,7 +191,7 @@ func getEligibilitySchedules(principals []*Principal, subscriptionId string) []*
 		for _, r := range resourceGroupNames {
 			for _, s := range p.ResourceGroups[r].Eligible {
 				s.PrincipalName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
+				s.Target = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
 				schedules = append(schedules, s)
 			}
 		}
@@ -204,7 +204,7 @@ func getEligibilitySchedules(principals []*Principal, subscriptionId string) []*
 		for _, r := range resourceNames {
 			for _, s := range p.Resources[r].Eligible {
 				s.PrincipalName = p.Name
-				s.Scope = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
+				s.Target = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionId, r)
 				schedules = append(schedules, s)
 			}
 		}

@@ -2,7 +2,6 @@ package role_eligibility_schedule_update
 
 import (
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -22,26 +21,26 @@ func GetRoleEligibilityScheduleUpdates(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	groupEligibilitySchedules []*core.Schedule,
-	existingGroupRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
-	userEligibilitySchedules []*core.Schedule,
-	existingUserRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	groupSchedules []*core.Schedule,
+	existingGroupSchedules []*armauthorization.RoleEligibilitySchedule,
+	userSchedules []*core.Schedule,
+	existingUserSchedules []*armauthorization.RoleEligibilitySchedule,
 ) ([]*core.RoleEligibilityScheduleUpdate, error) {
 	var roleEligibilityScheduleUpdates []*core.RoleEligibilityScheduleUpdate
 
-	groupEligibilitySchedulesToUpdate, err := schedule.FilterForEligibilitySchedulesToUpdate(
+	groupSchedulesToUpdate, err := schedule.FilterForRoleEligibilitySchedulesToUpdate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		groupEligibilitySchedules,
-		existingGroupRoleEligibilitySchedules,
+		groupSchedules,
+		existingGroupSchedules,
 		group.GetGroupDisplayNameById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range groupEligibilitySchedulesToUpdate {
+	for _, a := range groupSchedulesToUpdate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -56,30 +55,22 @@ func GetRoleEligibilityScheduleUpdates(
 			return nil, err
 		}
 
-		existingGroupRoleEligibilityScheduleIdx := slices.IndexFunc(existingGroupRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
+		existingScheduleIdx := linq.From(existingGroupSchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
+			return *s.Properties.Scope == a.Target &&
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *group.GetId()
 		})
-		existingGroupRoleEligibilityScheduleIdx2 := linq.From(existingGroupRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
-				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
-				*s.Properties.PrincipalID == *group.GetId()
-		})
-		if existingGroupRoleEligibilityScheduleIdx != existingGroupRoleEligibilityScheduleIdx2 {
-			panic("index mismatch")
-		}
-		if existingGroupRoleEligibilityScheduleIdx == -1 {
+		if existingScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role eligibility schedule not found")
 		}
 
-		existingGroupRoleEligibilitySchedule := existingGroupRoleEligibilitySchedules[existingGroupRoleEligibilityScheduleIdx]
+		existingSchedule := existingGroupSchedules[existingScheduleIdx]
 
 		var startTime *time.Time
 		if a.StartDateTime != nil {
 			startTime = a.StartDateTime
 		} else {
-			startTime = existingGroupRoleEligibilitySchedule.Properties.StartDateTime
+			startTime = existingSchedule.Properties.StartDateTime
 		}
 
 		scheduleInfo := schedule_info.GetRoleEligibilityScheduleInfo(startTime, a.EndDateTime)
@@ -98,24 +89,24 @@ func GetRoleEligibilityScheduleUpdates(
 			},
 			RoleEligibilityScheduleRequestName: uuid.New().String(),
 			RoleName:                           *roleDefinition.Properties.RoleName,
-			Scope:                              *existingGroupRoleEligibilitySchedule.Properties.Scope,
+			Scope:                              *existingSchedule.Properties.Scope,
 			StartDateTime:                      scheduleInfo.StartDateTime,
 		})
 	}
 
-	userEligibilitySchedulesToUpdate, err := schedule.FilterForEligibilitySchedulesToUpdate(
+	userSchedulesToUpdate, err := schedule.FilterForRoleEligibilitySchedulesToUpdate(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		userEligibilitySchedules,
-		existingUserRoleEligibilitySchedules,
+		userSchedules,
+		existingUserSchedules,
 		user.GetUserUpnById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, a := range userEligibilitySchedulesToUpdate {
+	for _, a := range userSchedulesToUpdate {
 		roleDefinition, err := role_definition.GetRoleDefinitionByName(
 			clientFactory,
 			scope,
@@ -130,30 +121,22 @@ func GetRoleEligibilityScheduleUpdates(
 			return nil, err
 		}
 
-		existingUserRoleEligibilityScheduleIdx := slices.IndexFunc(existingUserRoleEligibilitySchedules, func(s *armauthorization.RoleEligibilitySchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
+		existingScheduleIdx := linq.From(existingUserSchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
+			return *s.Properties.Scope == a.Target &&
 				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
 				*s.Properties.PrincipalID == *user.GetId()
 		})
-		existingUserRoleEligibilityScheduleIdx2 := linq.From(existingUserRoleEligibilitySchedules).IndexOfT(func(s *armauthorization.RoleEligibilitySchedule) bool {
-			return *s.Properties.Scope == a.Scope &&
-				*s.Properties.RoleDefinitionID == *roleDefinition.ID &&
-				*s.Properties.PrincipalID == *user.GetId()
-		})
-		if existingUserRoleEligibilityScheduleIdx != existingUserRoleEligibilityScheduleIdx2 {
-			panic("index mismatch")
-		}
-		if existingUserRoleEligibilityScheduleIdx == -1 {
+		if existingScheduleIdx == -1 {
 			return nil, fmt.Errorf("existing role eligibility schedule not found")
 		}
 
-		existingUserRoleEligibilitySchedule := existingUserRoleEligibilitySchedules[existingUserRoleEligibilityScheduleIdx]
+		existingSchedule := existingUserSchedules[existingScheduleIdx]
 
 		var startTime *time.Time
 		if a.StartDateTime != nil {
 			startTime = a.StartDateTime
 		} else {
-			startTime = existingUserRoleEligibilitySchedule.Properties.StartDateTime
+			startTime = existingSchedule.Properties.StartDateTime
 		}
 
 		scheduleInfo := schedule_info.GetRoleEligibilityScheduleInfo(startTime, a.EndDateTime)
@@ -172,7 +155,7 @@ func GetRoleEligibilityScheduleUpdates(
 			},
 			RoleEligibilityScheduleRequestName: uuid.New().String(),
 			RoleName:                           *roleDefinition.Properties.RoleName,
-			Scope:                              *existingUserRoleEligibilitySchedule.Properties.Scope,
+			Scope:                              *existingSchedule.Properties.Scope,
 			StartDateTime:                      scheduleInfo.StartDateTime,
 		})
 	}

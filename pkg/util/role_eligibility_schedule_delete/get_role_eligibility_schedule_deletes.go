@@ -16,26 +16,26 @@ func GetRoleEligibilityScheduleDeletes(
 	clientFactory *armauthorization.ClientFactory,
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	scope string,
-	groupEligibilitySchedules []*core.Schedule,
-	existingGroupRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
-	userEligibilitySchedules []*core.Schedule,
-	existingUserRoleEligibilitySchedules []*armauthorization.RoleEligibilitySchedule,
+	groupSchedules []*core.Schedule,
+	existingGroupSchedules []*armauthorization.RoleEligibilitySchedule,
+	userSchedules []*core.Schedule,
+	existingUserSchedules []*armauthorization.RoleEligibilitySchedule,
 ) ([]*core.RoleEligibilityScheduleDelete, error) {
 	var roleEligibilityScheduleDeletes []*core.RoleEligibilityScheduleDelete
 
-	groupEligibilitySchedulesToDelete, err := role_eligibility_schedule.FilterForRoleEligibilitySchedulesToDelete(
+	groupSchedulesToDelete, err := role_eligibility_schedule.FilterForRoleEligibilitySchedulesToDelete(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		existingGroupRoleEligibilitySchedules,
-		groupEligibilitySchedules,
+		existingGroupSchedules,
+		groupSchedules,
 		group.GetGroupDisplayNameById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, s := range groupEligibilitySchedulesToDelete {
+	for _, s := range groupSchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
 			*s.Properties.RoleDefinitionID,
@@ -83,19 +83,19 @@ func GetRoleEligibilityScheduleDeletes(
 		}
 	}
 
-	userEligibilitySchedulesToDelete, err := role_eligibility_schedule.FilterForRoleEligibilitySchedulesToDelete(
+	userSchedulesToDelete, err := role_eligibility_schedule.FilterForRoleEligibilitySchedulesToDelete(
 		clientFactory,
 		graphServiceClient,
 		scope,
-		existingUserRoleEligibilitySchedules,
-		userEligibilitySchedules,
+		existingUserSchedules,
+		userSchedules,
 		user.GetUserUpnById,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, s := range userEligibilitySchedulesToDelete {
+	for _, s := range userSchedulesToDelete {
 		roleDefinition, err := role_definition.GetRoleDefinitionById(
 			clientFactory,
 			*s.Properties.RoleDefinitionID,

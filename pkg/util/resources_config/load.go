@@ -74,8 +74,8 @@ func loadRoleManagementPolicyRulesets(patchesDirPath string) ([]*core.RoleManage
 	return roleManagementPolicyRulesets, err
 }
 
-func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
-	var policies []*core.Policy
+func loadPolicies(policiesDirPath string) ([]*core.ResourcePolicy, error) {
+	var policies []*core.ResourcePolicy
 
 	if _, err := os.Stat(policiesDirPath); err != nil {
 		if os.IsNotExist(err) {
@@ -102,7 +102,7 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 			return nil, err
 		}
 
-		var policy core.Policy
+		var policy core.ResourcePolicy
 
 		err = yaml.Unmarshal(yamlFile, &policy)
 		if err != nil {
@@ -124,8 +124,8 @@ func loadPolicies(policiesDirPath string) ([]*core.Policy, error) {
 	return policies, nil
 }
 
-func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
-	var principals []*core.Principal
+func loadPrincipals(principalsDirPath string) ([]*core.ResourcePrincipal, error) {
+	var principals []*core.ResourcePrincipal
 
 	if _, err := os.Stat(principalsDirPath); err != nil {
 		if os.IsNotExist(err) {
@@ -149,7 +149,7 @@ func loadPrincipals(principalsDirPath string) ([]*core.Principal, error) {
 			return nil, err
 		}
 
-		var principal core.Principal
+		var principal core.ResourcePrincipal
 
 		err = yaml.Unmarshal(yamlFile, &principal)
 		if err != nil {

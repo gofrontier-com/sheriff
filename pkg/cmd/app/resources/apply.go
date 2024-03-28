@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/gofrontier-com/go-utils/output"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/group"
+	"github.com/gofrontier-com/sheriff/pkg/util/resource_role_management_policy_update"
 	"github.com/gofrontier-com/sheriff/pkg/util/resources_config"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_assignment_schedule_create"
@@ -25,7 +25,6 @@ import (
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_create"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_delete"
 	"github.com/gofrontier-com/sheriff/pkg/util/role_eligibility_schedule_update"
-	"github.com/gofrontier-com/sheriff/pkg/util/role_management_policy_update"
 	"github.com/gofrontier-com/sheriff/pkg/util/user"
 	"github.com/golang-jwt/jwt/v5"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
@@ -34,9 +33,6 @@ import (
 const (
 	dateFormat = "Mon, 02 Jan 2006 15:04:05 MST"
 )
-
-//go:embed default_role_management_policy.json
-var defaultRoleManagementPolicyPropertiesData string
 
 var (
 	requiredActionsToApply = []string{
@@ -260,9 +256,9 @@ func ApplyResources(configDir string, subscriptionId string, planOnly bool) erro
 
 	output.PrintlnInfo("- Role management policies\n")
 
-	roleManagementPolicyUpdates, err := role_management_policy_update.GetRoleManagementPolicyUpdates(
+	roleManagementPolicyUpdates, err := resource_role_management_policy_update.GetResourceRoleManagementPolicyUpdates(
 		clientFactory,
-		defaultRoleManagementPolicyPropertiesData,
+		DefaultRoleManagementPolicyPropertiesData,
 		config,
 		subscriptionId,
 	)
@@ -567,7 +563,7 @@ func printPlan(
 	roleEligibilityScheduleCreates []*core.RoleEligibilityScheduleCreate,
 	roleEligibilityScheduleUpdates []*core.RoleEligibilityScheduleUpdate,
 	roleEligibilityScheduleDeletes []*core.RoleEligibilityScheduleDelete,
-	roleManagementPolicyUpdates []*core.RoleManagementPolicyUpdate,
+	roleManagementPolicyUpdates []*core.ResourceRoleManagementPolicyUpdate,
 ) {
 	builder := &strings.Builder{}
 

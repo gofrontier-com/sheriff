@@ -15,7 +15,7 @@ var (
 )
 
 func main() {
-	myFigure := figure.NewFigure("Sheriff for Azure", "doom", true)
+	myFigure := figure.NewFigure("Sheriff", "doom", true)
 	myFigure.Print()
 	output.PrintlnInfo()
 	command := sheriff.NewRootCmd(version, commit, date)

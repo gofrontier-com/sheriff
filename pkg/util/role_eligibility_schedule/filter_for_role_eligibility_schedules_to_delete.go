@@ -40,7 +40,7 @@ func FilterForRoleEligibilitySchedulesToDelete(
 				panic(err)
 			}
 
-			return *r.Properties.Scope == a.Scope &&
+			return *r.Properties.Scope == a.Target &&
 				*roleDefinition.Properties.RoleName == a.RoleName &&
 				*principalName == a.PrincipalName
 		}).Any()

@@ -6,9 +6,9 @@
 |
 
 .. image:: logo.png
-  :width: 200
-  :alt: Sheriff logo
-  :align: center
+    :width: 200
+    :alt: Sheriff logo
+    :align: center
 
 =======
 Sheriff
@@ -74,21 +74,21 @@ Configuration
 Azure Resources
 ~~~~~~~~~~~~~~~
 
-.. code:: bash
+.. code-block:: bash
 
-  groups/
-    <group name>.yml
-    ...
-  users/
-    <user upn>.yml
-    ...
-  policies/
-    <role name>.yml
-    ...
-    rulesets/
-      <ruleset name>.yml
+    groups/
+      <group name>.yml
       ...
-    ...
+    users/
+      <user upn>.yml
+      ...
+    policies/
+      <role name>.yml
+      ...
+      rulesets/
+        <ruleset name>.yml
+        ...
+      ...
 
 Configuration of active and eligible role assigments is managed via YAML files per group and/or user,
 in which both active and eligible role assignments are defined.
@@ -137,21 +137,21 @@ by a ruleset at an exact scope.
 
 .. code:: yaml
 
-  ---
-  default:
-    - rulesetName: <ruleset name>
-    ...
-  subscription:
-    - rulesetName: <ruleset name>
-    ...
-  resourceGroups:
-    <resource group name>:
+    ---
+    default:
       - rulesetName: <ruleset name>
       ...
-  resources:
-    <resource name>:
+    subscription:
       - rulesetName: <ruleset name>
       ...
+    resourceGroups:
+      <resource group name>:
+        - rulesetName: <ruleset name>
+        ...
+    resources:
+      <resource name>:
+        - rulesetName: <ruleset name>
+        ...
 
 Rules (and partial rules) defined in rulesets override those in the
 `default role management policy <https://github.com/gofrontier-com/sheriff/tree/main/pkg/cmd/app/apply/default_role_management_policy.json>`_.
@@ -160,22 +160,22 @@ Rules (and partial rules) defined in rulesets override those in the
 
 .. code:: yaml
 
-  ---
-  rules:
-    - id: Approval_EndUser_Assignment
-      patch:
-        setting:
-          approvalStages:
-            - approvalStageTimeOutInDays: 1
-              escalationTimeInMinutes: 0
-              isApproverJustificationRequired: true
-              isEscalationEnabled: false
-              primaryApprovers:
-                - userType: Group
-                  isBackup: false
-                  id: abd8337a-b700-4de5-a800-006d893fc015
-                  description: CSG-RBAC-SeniorEngineers
-          isApprovalRequired: true
+    ---
+    rules:
+      - id: Approval_EndUser_Assignment
+        patch:
+          setting:
+            approvalStages:
+              - approvalStageTimeOutInDays: 1
+                escalationTimeInMinutes: 0
+                isApproverJustificationRequired: true
+                isEscalationEnabled: false
+                primaryApprovers:
+                  - userType: Group
+                    isBackup: false
+                    id: abd8337a-b700-4de5-a800-006d893fc015
+                    description: CSG-RBAC-SeniorEngineers
+            isApprovalRequired: true
 
 See `Rules in PIM - mapping guide <https://learn.microsoft.com/en-us/graph/identity-governance-pim-rules-overview>`_ for more information.
 
@@ -187,10 +187,10 @@ configuration for all roles at all scopes, for example:
 
 .. code:: yaml
 
-  ---
-  default:
-    - rulesetName: <ruleset name>
-    ...
+    ---
+    default:
+      - rulesetName: <ruleset name>
+      ...
 
 
 Examples
@@ -203,10 +203,10 @@ Active assignment for group at any scope
 
 .. code:: yaml
 
-  ---
-  default:
-    active:
-      - roleName: Reader
+    ---
+    default:
+      active:
+        - roleName: Reader
 
 Active assignment for group at subscription scope
 -------------------------------------------------
@@ -215,10 +215,10 @@ Active assignment for group at subscription scope
 
 .. code:: yaml
 
-  ---
-  subscription:
-    active:
-      - roleName: Reader
+    ---
+    subscription:
+      active:
+        - roleName: Reader
 
 Active assignment for user at resource group scope
 --------------------------------------------------
@@ -227,11 +227,11 @@ Active assignment for user at resource group scope
 
 .. code:: yaml
 
-  ---
-  resourceGroups:
-    rg-dev-virtualmachine:
-      active:
-        - roleName: Contributor
+    ---
+    resourceGroups:
+      rg-dev-virtualmachine:
+        active:
+          - roleName: Contributor
 
 Active assignment for user at resource scope
 --------------------------------------------
@@ -240,11 +240,11 @@ Active assignment for user at resource scope
 
 .. code:: yaml
 
-  ---
-  resources:
-    rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
-      active:
-        - roleName: Network Contributor
+    ---
+    resources:
+      rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
+        active:
+          - roleName: Network Contributor
 
 Eligible assignment for group at any scope
 ------------------------------------------
@@ -253,11 +253,11 @@ Eligible assignment for group at any scope
 
 .. code:: yaml
 
-  ---
-  default:
-    eligible:
-      - roleName: Disk Restore Operator
-        endDateTime: 2024-12-31T00:00:00Z
+    ---
+    default:
+      eligible:
+        - roleName: Disk Restore Operator
+          endDateTime: 2024-12-31T00:00:00Z
 
 By default, Entra ID PIM requires that eligible assignments have an expiry date. To create an eligible assignment that never expires, you must create a role management policy ruleset that disables this requirement.
 
@@ -265,19 +265,19 @@ By default, Entra ID PIM requires that eligible assignments have an expiry date.
 
 .. code:: yaml
 
-  ---
-  subscription:
-    - rulesetName: NoEligibleExpiry
+    ---
+    subscription:
+      - rulesetName: NoEligibleExpiry
 
 ``policies/rulesets/NoEligibleExpiry.yml``
 
 .. code:: yaml
 
-  ---
-  rules:
-    - id: Expiration_Admin_Eligibility
-      patch:
-        isExpirationRequired: false
+    ---
+    rules:
+      - id: Expiration_Admin_Eligibility
+        patch:
+          isExpirationRequired: false
 
 With the above created, you can now omit an expiry date.
 
@@ -285,10 +285,10 @@ With the above created, you can now omit an expiry date.
 
 .. code:: yaml
 
-  ---
-  subscription:
-    eligible:
-      - roleName: Disk Restore Operator
+    ---
+    subscription:
+      eligible:
+        - roleName: Disk Restore Operator
 
 Eligible assignment for user at resource scope with approval
 ------------------------------------------------------------
@@ -297,42 +297,42 @@ Eligible assignment for user at resource scope with approval
 
 .. code:: yaml
 
-  ---
-  rules:
-    - id: Approval_EndUser_Assignment
-      patch:
-        setting:
-          approvalStages:
-            - approvalStageTimeOutInDays: 1
-              escalationTimeInMinutes: 0
-              isApproverJustificationRequired: true
-              isEscalationEnabled: false
-              primaryApprovers:
-                - userType: Group
-                  isBackup: false
-                  id: abd8337a-b700-4de5-a800-006d893fc015
-                  description: SeniorEngineers
-          isApprovalRequired: true
+    ---
+    rules:
+      - id: Approval_EndUser_Assignment
+        patch:
+          setting:
+            approvalStages:
+              - approvalStageTimeOutInDays: 1
+                escalationTimeInMinutes: 0
+                isApproverJustificationRequired: true
+                isEscalationEnabled: false
+                primaryApprovers:
+                  - userType: Group
+                    isBackup: false
+                    id: abd8337a-b700-4de5-a800-006d893fc015
+                    description: SeniorEngineers
+            isApprovalRequired: true
 
 ``policies/Network Contributor.yml``
 
 .. code:: yaml
 
-  ---
-  resources:
-    rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
-      - rulesetName: ApprovalRequired
-      - rulesetName: NoEligibleExpiry
+    ---
+    resources:
+      rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
+        - rulesetName: ApprovalRequired
+        - rulesetName: NoEligibleExpiry
 
 ``users/john@gofrontier.com.yml``
 
 .. code:: yaml
 
-  ---
-  resources:
-    rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
-      eligible:
-        - roleName: Network Contributor
+    ---
+    resources:
+      rg-dev-virtualnetwork/providers/Microsoft.Network/virtualNetworks/vnet-dev-main:
+        eligible:
+          - roleName: Network Contributor
 
 ~~~~~~~~~~~~~~~~~~~~~
 Microsoft Entra roles
@@ -352,25 +352,25 @@ Usage
 
 .. code:: bash
 
-  $ sheriff --help
-  Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Privileged Identity Management (PIM) configuration declaratively
+    $ sheriff --help
+    Sheriff is a command line tool to manage Azure role-based access control (RBAC) and Microsoft Entra Privileged Identity Management (PIM) configuration declaratively
 
-  Usage:
-    sheriff
-    sheriff [command]
+    Usage:
+      sheriff
+      sheriff [command]
 
-  Available Commands:
-    apply       Apply config
-    completion  Generate the autocompletion script for the specified shell
-    help        Help about any command
-    plan        Plan changes
-    validate    Validate config
-    version     Output version information
+    Available Commands:
+      apply       Apply config
+      completion  Generate the autocompletion script for the specified shell
+      help        Help about any command
+      plan        Plan changes
+      validate    Validate config
+      version     Output version information
 
-  Flags:
-    -h, --help   help for sheriff
+    Flags:
+      -h, --help   help for sheriff
 
-  Use "sheriff [command] --help" for more information about a command.
+    Use "sheriff [command] --help" for more information about a command.
 
 ~~~~~~~~~~~~~~~
 Azure Resources
@@ -381,18 +381,18 @@ Plan
 
 .. code:: bash
 
-  $ sheriff plan resources \
-      --config-dir <path to resources config> \
-      --subscription-id <subscription ID>
+    $ sheriff plan resources \
+        --config-dir <path to resources config> \
+        --subscription-id <subscription ID>
 
 Apply
 ~~~~~
 
 .. code:: bash
 
-  $ sheriff apply resources \
-      --config-dir <path to resources config> \
-      --subscription-id <subscription ID>
+    $ sheriff apply resources \
+        --config-dir <path to resources config> \
+        --subscription-id <subscription ID>
 
 ~~~~~~~~~~~~~~~~~~~~~
 Microsoft Entra roles
@@ -457,24 +457,24 @@ Microsoft Graph
 The authenticated principal requires the following Microsoft Graph permissions:
 
 .. list-table::
-   :widths: 25 50
-   :header-rows: 1
+    :widths: 25 50
+    :header-rows: 1
 
-   * - Function
-     - Permissions
-   * - | ``plan resources``
-       | ``apply resources``
-     - | To manage users, at least one of:
-       |
-       | ``User.ReadBasic.All`` (least privileged option)
-       | ``User.Read.All``
-       | ``Directory.Read.All`` (most privileged option)
-       |
-       | To manage groups, at least one of:
-       |
-       | ``GroupMember.Read.All`` (least privileged option)
-       | ``Group.Read.All``
-       | ``Directory.Read.All`` (most privileged option)
+    * - Function
+      - Permissions
+    * - | ``plan resources``
+        | ``apply resources``
+      - | To manage users, at least one of:
+        |
+        | ``User.ReadBasic.All`` (least privileged option)
+        | ``User.Read.All``
+        | ``Directory.Read.All`` (most privileged option)
+        |
+        | To manage groups, at least one of:
+        |
+        | ``GroupMember.Read.All`` (least privileged option)
+        | ``Group.Read.All``
+        | ``Directory.Read.All`` (most privileged option)
 
 ------------
 Contributing
