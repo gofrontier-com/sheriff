@@ -2,7 +2,6 @@ package groups
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"strings"
 
@@ -42,9 +41,6 @@ import (
 var (
 	dateFormat = "Mon, 02 Jan 2006 15:04:05 MST"
 )
-
-//go:embed default_role_management_policy.json
-var defaultRoleManagementPolicyPropertiesData string
 
 type GroupsResponse struct {
 	Value []GroupResponse `json:"value"`
@@ -303,7 +299,7 @@ func ApplyGroups(configDir string, planOnly bool) error {
 
 	roleManagementPolicyUpdates, err := group_role_management_policy_update.GetGroupRoleManagementPolicyUpdates(
 		graphServiceClient,
-		defaultRoleManagementPolicyPropertiesData,
+		DefaultRoleManagementPolicyPropertiesData,
 		config,
 	)
 	if err != nil {
@@ -337,24 +333,21 @@ func ApplyGroups(configDir string, planOnly bool) error {
 
 	output.PrintlnInfo("\nApplying plan...\n")
 
-	// for _, u := range roleManagementPolicyUpdates {
-	// 	output.PrintlnfInfo(
-	// 		"Updating role management policy for role \"%s\" at scope \"%s\"",
-	// 		u.RoleName,
-	// 		u.Scope,
-	// 	)
+	for _, u := range roleManagementPolicyUpdates {
+		output.PrintlnfInfo(
+			"Updating role management policy for role \"%s\" in managed group \"%s\"",
+			u.RoleName,
+			u.ManagedGroupName,
+		)
 
-	// 	_, err = roleManagementPoliciesClient.Update(
-	// 		context.Background(),
-	// 		u.Scope,
-	// 		*u.RoleManagementPolicy.Name,
-	// 		*u.RoleManagementPolicy,
-	// 		nil,
-	// 	)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+		_, err = graphServiceClient.Policies().RoleManagementPolicies().
+			ByUnifiedRoleManagementPolicyId(*u.RoleManagementPolicy.GetId()).
+			Patch(context.Background(), u.RoleManagementPolicy, nil)
+			// _, err = graphServiceClient.Policies().RoleManagementPolicies().
+		if err != nil {
+			return err
+		}
+	}
 
 	for _, c := range groupAssignmentScheduleCreates {
 		output.PrintlnfInfo(
@@ -575,7 +568,8 @@ func printPlan(
 			builder.WriteString("  # Update role management policies:\n\n")
 			for _, u := range roleManagementPolicyUpdates {
 				builder.WriteString(fmt.Sprintf("    ~ Role:          %s\n", u.RoleName))
-				builder.WriteString(fmt.Sprintf("      Managed group: %s\n\n", u.ManagedGroupName))
+				builder.WriteString(fmt.Sprintf("      Managed group: %s\n", u.ManagedGroupName))
+				builder.WriteString(fmt.Sprintf("      Changes:       %s\n\n", strings.Join(u.Changes, ", ")))
 			}
 		}
 

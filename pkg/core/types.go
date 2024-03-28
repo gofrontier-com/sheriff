@@ -9,12 +9,42 @@ import (
 
 //region shared
 
+type PrincipalType string
+
+const (
+	PrincipalTypeGroup PrincipalType = "Group"
+	PrincipalTypeUser  PrincipalType = "User"
+)
+
+func PossiblePrincipalTypeValues() []PrincipalType {
+	return []PrincipalType{
+		PrincipalTypeGroup,
+		PrincipalTypeUser,
+	}
+}
+
 type Schedule struct {
 	EndDateTime   *time.Time `yaml:"endDateTime"`
 	PrincipalName string
+	PrincipalType PrincipalType
 	RoleName      string `yaml:"roleName" validate:"required"`
-	Target        string
+	ScheduleType  ScheduleType
 	StartDateTime *time.Time `yaml:"startDateTime"`
+	Target        string
+}
+
+type ScheduleType string
+
+const (
+	ScheduleTypeActive   ScheduleType = "Active"
+	ScheduleTypeEligible ScheduleType = "Eligible"
+)
+
+func PossibleScheduleTypeValues() []ScheduleType {
+	return []ScheduleType{
+		ScheduleTypeActive,
+		ScheduleTypeEligible,
+	}
 }
 
 type RoleManagementPolicyRule struct {
@@ -128,8 +158,9 @@ type GroupEligibilityScheduleUpdate struct {
 }
 
 type GroupRoleManagementPolicyUpdate struct {
+	Changes              []string
 	ManagedGroupName     string
-	RoleManagementPolicy models.UnifiedRoleManagementPolicy
+	RoleManagementPolicy models.UnifiedRoleManagementPolicyable
 	RoleName             string
 }
 
@@ -233,6 +264,7 @@ type RoleEligibilityScheduleUpdate struct {
 }
 
 type ResourceRoleManagementPolicyUpdate struct {
+	Changes              []string
 	RoleManagementPolicy *armauthorization.RoleManagementPolicy
 	RoleName             string
 	Scope                string

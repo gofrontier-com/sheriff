@@ -1,47 +1,30 @@
 package group_role_management_policy_update
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/ahmetb/go-linq/v3"
-	jsonpatch "github.com/evanphx/json-patch/v5"
-	"github.com/go-test/deep"
 	"github.com/gofrontier-com/sheriff/pkg/core"
 	"github.com/gofrontier-com/sheriff/pkg/util/group"
 	"github.com/gofrontier-com/sheriff/pkg/util/unified_role_management_policy_assignment"
+	"github.com/microsoft/kiota-abstractions-go/serialization"
 	kjson "github.com/microsoft/kiota-serialization-json-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 )
+
+// var expirationAdminAssignmentData string
 
 func GetGroupRoleManagementPolicyUpdates(
 	graphServiceClient *msgraphsdkgo.GraphServiceClient,
 	defaultRoleManagementPolicyPropertiesData string,
 	config *core.GroupsConfig,
 ) ([]*core.GroupRoleManagementPolicyUpdate, error) {
-	// var roleManagementPolicyUpdates []*core.GroupRoleManagementPolicyUpdate
+	var roleManagementPolicyUpdates []*core.GroupRoleManagementPolicyUpdate
 
 	groupNameRoleNameCombinations := config.GetGroupNameRoleNameCombinations()
 
 	for _, c := range groupNameRoleNameCombinations {
-		parser, err := kjson.NewJsonParseNode([]byte(defaultRoleManagementPolicyPropertiesData))
-		if err != nil {
-			panic(err)
-		}
-
-		parsedValue, err := parser.GetObjectValue(models.CreateUnifiedRoleManagementPolicyFromDiscriminatorValue)
-		if err != nil {
-			panic(err)
-		}
-
-		desiredRoleManagementPolicy := parsedValue.(models.UnifiedRoleManagementPolicyable)
-
-		// slices.SortFunc(
-		// 	desiredRoleManagementPolicy.GetRules(),
-		// 	unified_role_management_policy_rule.SortByID,
-		// )
-
 		policy := config.GetPolicyByRoleName(c.RoleName)
 
 		var roleManagementPolicyRulesets []*core.RoleManagementPolicyRuleset
@@ -64,84 +47,57 @@ func GetGroupRoleManagementPolicyUpdates(
 			roleManagementPolicyRulesets = []*core.RoleManagementPolicyRuleset{}
 		}
 
+		roleManagementPolicyParser, err := kjson.NewJsonParseNode([]byte(defaultRoleManagementPolicyPropertiesData))
+		if err != nil {
+			panic(err)
+		}
+
+		roleManagementPolicyParsedValue, err := roleManagementPolicyParser.GetObjectValue(models.CreateUnifiedRoleManagementPolicyFromDiscriminatorValue)
+		if err != nil {
+			panic(err)
+		}
+
+		roleManagementPolicy := roleManagementPolicyParsedValue.(models.UnifiedRoleManagementPolicyable)
+
+		rules := roleManagementPolicy.GetRules()
+
 		for _, roleManagementPolicyRuleset := range roleManagementPolicyRulesets {
-			for _, rule := range roleManagementPolicyRuleset.Rules {
-				if rule.Patch == nil {
+			for _, rulesetRule := range roleManagementPolicyRuleset.Rules {
+				if rulesetRule.Patch == nil {
 					continue
 				}
 
-				rulePatchData, err := json.Marshal(rule.Patch)
-				if err != nil {
-					return nil, err
-				}
-
-				rules := desiredRoleManagementPolicy.GetRules()
-
 				ruleIndex := linq.From(rules).IndexOfT(func(s models.UnifiedRoleManagementPolicyRuleable) bool {
-					return *s.GetId() == rule.ID
+					return *s.GetId() == rulesetRule.ID
 				})
 				if ruleIndex == -1 {
-					return nil, fmt.Errorf("rule with Id '%s' not found", rule.ID)
+					return nil, fmt.Errorf("rule with Id '%s' not found", rulesetRule.ID)
 				}
 
 				rule := rules[ruleIndex]
 
-				ruleData, err := kjson.Marshal(rule)
-				if err != nil {
-					return nil, err
+				ruleType := rule.GetAdditionalData()["ruleType"].(*string)
+
+				switch *ruleType {
+				case "RoleManagementPolicyApprovalRule":
+				case "RoleManagementPolicyAuthenticationContextRule":
+				case "RoleManagementPolicyEnablementRule":
+				case "RoleManagementPolicyExpirationRule":
+					if rulesetRule.Patch.(map[string]interface{})["isExpirationRequired"] != nil {
+						isExpirationRequired := rulesetRule.Patch.(map[string]interface{})["isExpirationRequired"].(bool)
+						rule.(*models.UnifiedRoleManagementPolicyExpirationRule).SetIsExpirationRequired(&isExpirationRequired)
+					}
+					if rulesetRule.Patch.(map[string]interface{})["maximumDuration"] != nil {
+						duration, err := serialization.ParseISODuration(rulesetRule.Patch.(map[string]interface{})["maximumDuration"].(string))
+						if err != nil {
+							panic(err)
+						}
+						rule.(*models.UnifiedRoleManagementPolicyExpirationRule).SetMaximumDuration(duration)
+					}
+				case "RoleManagementPolicyNotificationRule":
+				default:
+					return nil, fmt.Errorf("unknown rule type '%s'", *ruleType)
 				}
-
-				ruleDataStr := string(ruleData)
-				ruleData = []byte(fmt.Sprintf("{%s}", ruleDataStr))
-
-				patchedRuleData, err := jsonpatch.MergePatch(ruleData, rulePatchData)
-				if err != nil {
-					return nil, err
-				}
-
-				patchedRuleParser, err := kjson.NewJsonParseNode([]byte(patchedRuleData))
-				if err != nil {
-					panic(err)
-				}
-
-				patchedRuleParserValue, err := patchedRuleParser.GetObjectValue(models.CreateUnifiedRoleManagementPolicyRuleFromDiscriminatorValue)
-				if err != nil {
-					panic(err)
-				}
-
-				patchedRule := patchedRuleParserValue.(*models.UnifiedRoleManagementPolicyRule)
-
-				rules[ruleIndex] = patchedRule
-
-				desiredRoleManagementPolicy.SetRules(rules)
-
-				// ruleType := rule.GetAdditionalData()["ruleType"].(*string)
-
-				// switch *ruleType {
-				// case "RoleManagementPolicyApprovalRule":
-				// 	rule := rule.(*models.UnifiedRoleManagementPolicyApprovalRule)
-
-				// 	ruleData, err := kjson.Marshal(rule)
-				// 	if err != nil {
-				// 		return nil, err
-				// 	}
-				// 	_ = ruleData
-				// case "RoleManagementPolicyAuthenticationContextRule":
-				// 	rule := rule.(*models.UnifiedRoleManagementPolicyAuthenticationContextRule)
-				// 	_ = rule
-				// case "RoleManagementPolicyEnablementRule":
-				// 	rule := rule.(*models.UnifiedRoleManagementPolicyEnablementRule)
-				// 	_ = rule
-				// case "RoleManagementPolicyExpirationRule":
-				// 	rule := rule.(*models.UnifiedRoleManagementPolicyExpirationRule)
-				// 	_ = rule
-				// case "RoleManagementPolicyNotificationRule":
-				// 	rule := rule.(*models.UnifiedRoleManagementPolicyNotificationRule)
-				// 	_ = rule
-
-				// default:
-				// 	return nil, fmt.Errorf("unknown rule type '%s'", *ruleType)
-				// }
 			}
 		}
 
@@ -159,29 +115,48 @@ func GetGroupRoleManagementPolicyUpdates(
 			return nil, err
 		}
 
-		// slices.SortFunc(
-		// 	roleManagementPolicyAssignment.GetPolicy().GetEffectiveRules(),
-		// 	unified_role_management_policy_rule.SortByID,
-		// )
+		existingRoleManagementPolicy := roleManagementPolicyAssignment.GetPolicy()
+		existingRules := existingRoleManagementPolicy.GetEffectiveRules()
 
-		roleManagementPolicy := roleManagementPolicyAssignment.GetPolicy()
-		_ = roleManagementPolicy
-		// roleManagementPolicy.GetBackingStore().SetInitializationCompleted(true)
+		changes := []string{}
+		for _, existingRule := range existingRules {
+			ruleType := existingRule.GetOdataType()
 
-		diff := deep.Equal(roleManagementPolicyAssignment.GetPolicy().GetEffectiveRules(), desiredRoleManagementPolicy.GetRules())
-		_ = diff
+			switch *ruleType {
+			case "#microsoft.graph.unifiedRoleManagementPolicyApprovalRule":
+			case "#microsoft.graph.unifiedRoleManagementPolicyAuthenticationContextRule":
+			case "#microsoft.graph.unifiedRoleManagementPolicyEnablementRule":
+			case "#microsoft.graph.unifiedRoleManagementPolicyExpirationRule":
+				rule := linq.From(rules).
+					SingleWithT(func(r models.UnifiedRoleManagementPolicyRuleable) bool {
+						return *r.GetId() == *existingRule.GetId()
+					}).(*models.UnifiedRoleManagementPolicyExpirationRule)
 
-		// if len(diff) > 0 {
+				if *rule.GetIsExpirationRequired() != *existingRule.(*models.UnifiedRoleManagementPolicyExpirationRule).GetIsExpirationRequired() {
+					changes = append(changes, fmt.Sprintf("%s/isExpirationRequired (%t -> %t)", *existingRule.GetId(), *existingRule.(*models.UnifiedRoleManagementPolicyExpirationRule).GetIsExpirationRequired(), *rule.GetIsExpirationRequired()))
+					existingRule.(*models.UnifiedRoleManagementPolicyExpirationRule).SetIsExpirationRequired(rule.GetIsExpirationRequired())
+				}
 
-		// }
-		// desiredRoleManagementPolicy.GetBackingStore().SetReturnOnlyChangedValues(true)
+				if *rule.GetMaximumDuration() != *existingRule.(*models.UnifiedRoleManagementPolicyExpirationRule).GetMaximumDuration() {
+					existingRule.(*models.UnifiedRoleManagementPolicyExpirationRule).SetMaximumDuration(rule.GetMaximumDuration())
+					changes = append(changes, *existingRule.GetId())
+				}
+			case "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule":
+			default:
+				return nil, fmt.Errorf("unknown rule type '%s'", *ruleType)
+			}
+		}
 
-		// desiredRoleManagementPolicy.
-
-		// things := desiredRoleManagementPolicy.GetBackingStore().Enumerate()
-		// foo := things
-		// _ = foo
+		if len(changes) > 0 {
+			existingRoleManagementPolicy.SetRules(existingRules)
+			roleManagementPolicyUpdates = append(roleManagementPolicyUpdates, &core.GroupRoleManagementPolicyUpdate{
+				Changes:              changes,
+				ManagedGroupName:     c.Target,
+				RoleManagementPolicy: existingRoleManagementPolicy,
+				RoleName:             c.RoleName,
+			})
+		}
 	}
 
-	return nil, nil
+	return roleManagementPolicyUpdates, nil
 }

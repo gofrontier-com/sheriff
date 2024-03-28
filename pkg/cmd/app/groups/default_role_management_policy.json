@@ -1,6 +1,7 @@
 {
   "rules": [
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyEnablementRule",
       "enabledRules": [],
       "id": "Enablement_Admin_Eligibility",
       "ruleType": "RoleManagementPolicyEnablementRule",
@@ -16,6 +17,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyExpirationRule",
       "id": "Expiration_Admin_Eligibility",
       "isExpirationRequired": true,
       "maximumDuration": "P365D",
@@ -32,6 +34,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Admin_Admin_Eligibility",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -50,6 +53,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Requestor_Admin_Eligibility",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -68,6 +72,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Approver_Admin_Eligibility",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -86,6 +91,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyEnablementRule",
       "enabledRules": [
         "Justification"
       ],
@@ -103,6 +109,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyExpirationRule",
       "id": "Expiration_Admin_Assignment",
       "isExpirationRequired": true,
       "maximumDuration": "P180D",
@@ -119,6 +126,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Admin_Admin_Assignment",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -137,6 +145,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Requestor_Admin_Assignment",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -155,6 +164,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Approver_Admin_Assignment",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -173,6 +183,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyApprovalRule",
       "id": "Approval_EndUser_Assignment",
       "ruleType": "RoleManagementPolicyApprovalRule",
       "setting": {
@@ -201,6 +212,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyAuthenticationContextRule",
       "id": "AuthenticationContext_EndUser_Assignment",
       "isEnabled": false,
       "ruleType": "RoleManagementPolicyAuthenticationContextRule",
@@ -216,6 +228,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyEnablementRule",
       "enabledRules": [
         "Justification"
       ],
@@ -233,6 +246,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyExpirationRule",
       "id": "Expiration_EndUser_Assignment",
       "isExpirationRequired": true,
       "maximumDuration": "PT8H",
@@ -249,6 +263,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Admin_EndUser_Assignment",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -267,6 +282,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Requestor_EndUser_Assignment",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",
@@ -285,6 +301,7 @@
       }
     },
     {
+      "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyNotificationRule",
       "id": "Notification_Approver_EndUser_Assignment",
       "isDefaultRecipientsEnabled": true,
       "notificationLevel": "All",

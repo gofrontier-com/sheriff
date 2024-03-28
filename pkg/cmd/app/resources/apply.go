@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"strings"
 
@@ -34,9 +33,6 @@ import (
 const (
 	dateFormat = "Mon, 02 Jan 2006 15:04:05 MST"
 )
-
-//go:embed default_role_management_policy.json
-var defaultRoleManagementPolicyPropertiesData string
 
 var (
 	requiredActionsToApply = []string{
@@ -262,7 +258,7 @@ func ApplyResources(configDir string, subscriptionId string, planOnly bool) erro
 
 	roleManagementPolicyUpdates, err := resource_role_management_policy_update.GetResourceRoleManagementPolicyUpdates(
 		clientFactory,
-		defaultRoleManagementPolicyPropertiesData,
+		DefaultRoleManagementPolicyPropertiesData,
 		config,
 		subscriptionId,
 	)
